@@ -22,7 +22,8 @@
     },
     "require-dev": {
         "pestphp/pest": "^3.0",
-        "fakerphp/faker": "^1.23"
+        "fakerphp/faker": "^1.23",
+        "phpstan/phpstan": "^2.1"
     },
     "repositories": [
         {
