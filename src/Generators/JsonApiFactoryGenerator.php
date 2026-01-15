@@ -4,38 +4,37 @@ declare(strict_types=1);
 
 namespace JsonApiSdk\Generators;
 
+use Crescat\SaloonSdkGenerator\Contracts\PostProcessor;
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
+use Crescat\SaloonSdkGenerator\Data\Generator\Config;
+use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
+use Crescat\SaloonSdkGenerator\Data\TaggedOutputFile;
 use Crescat\SaloonSdkGenerator\Generator;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\PhpFile;
-use ReflectionClass;
 use JsonApiSdk\Foundation\Factories\Factory;
 use JsonApiSdk\Foundation\Hydration\Attributes\DateTime;
 
-class JsonApiFactoryGenerator extends Generator
+class JsonApiFactoryGenerator implements PostProcessor
 {
     protected array $generated = [];
 
-    public function generate(ApiSpecification $specification): PhpFile|array
-    {
-        if ($specification->components) {
-            foreach ($specification->components->schemas as $className => $schema) {
-                // Skip schemas that aren't useful
-                if (str_ends_with($className, 'Identifier') ||
-                    str_ends_with($className, 'Request')) {
-                    continue;
-                }
+    protected Config $config;
 
-                $dtoClassName = NameHelper::dtoClassName(NameHelper::safeClassName($className));
-                $this->generateFactoryClass($dtoClassName);
-            }
+    public function process(Config $config, ApiSpecification $specification, GeneratedCode $generatedCode,): PhpFile|array|null
+    {
+        $this->config = $config;
+
+        foreach($generatedCode->dtoClasses as $dtoClassName => $dtoClass) {
+            $this->generateFactoryClass($dtoClassName, $dtoClass);
         }
 
         return $this->generated;
     }
 
-    protected function generateFactoryClass(string $dtoClassName): PhpFile
+
+    protected function generateFactoryClass(string $dtoClassName, PhpFile $dtoClass): PhpFile
     {
         $factoryName = $dtoClassName.'Factory';
 
@@ -51,8 +50,8 @@ class JsonApiFactoryGenerator extends Generator
         $dtoFullClass = "{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}\\{$dtoClassName}";
         $namespace->addUse($dtoFullClass);
 
-        // Get DTO properties
-        $properties = $this->getDtoProperties($dtoFullClass);
+        // Get DTO properties from the generated PhpFile (no reflection)
+        $properties = $this->getDtoPropertiesFromPhpFile($dtoClass);
 
         // Add definition() method
         $definitionMethod = $classType->addMethod('definition')
@@ -71,65 +70,88 @@ class JsonApiFactoryGenerator extends Generator
 
         $namespace->add($classType);
 
-        $this->generated[$factoryName] = $classFile;
+        // Instead of returning PhpFile directly, store as a tagged output file so we can control the target path
+        $this->generated[$factoryName] = new TaggedOutputFile(
+            tag: 'factories',
+            file: (string) $classFile,
+            path: "factories/{$factoryName}.php",
+        );
 
         return $classFile;
     }
 
     /**
-     * Get DTO properties using reflection
+     * Get DTO properties using the PhpFile representation (no reflection)
      *
      * @return array<array{name: string, type: ?string, isDateTime: bool}>
      */
-    protected function getDtoProperties(string $dtoFullClass): array
+    protected function getDtoPropertiesFromPhpFile(PhpFile $dtoClass): array
     {
-        if (! class_exists($dtoFullClass)) {
-            return [];
-        }
-
-        $reflection = new ReflectionClass($dtoFullClass);
         $properties = [];
 
-        foreach ($reflection->getProperties() as $property) {
-            // Skip 'id' and 'type' properties from Model base class
-            if (in_array($property->getName(), ['id', 'type'])) {
-                continue;
-            }
+        foreach ($dtoClass->getNamespaces() as $ns) {
+            foreach ($ns->getClasses() as $class) {
+                foreach ($class->getProperties() as $property) {
+                    $propName = $property->getName();
 
-            // Skip static and private properties
-            if ($property->isStatic() || $property->isPrivate()) {
-                continue;
-            }
+                    // Skip 'id' and 'type' properties from Model base class
+                    if (in_array($propName, ['id', 'type'])) {
+                        continue;
+                    }
 
-            // Skip relationship properties (they have Relationship attribute)
-            $hasRelationshipAttribute = false;
-            foreach ($property->getAttributes() as $attribute) {
-                $attrName = $attribute->getName();
-                if ($attrName === 'Relationship' || str_ends_with($attrName, '\\Relationship')) {
-                    $hasRelationshipAttribute = true;
-                    break;
+                    // Skip static and private properties
+                    if ($property->isStatic() || $property->isPrivate()) {
+                        continue;
+                    }
+
+                    // Skip relationship properties (they have Relationship attribute)
+                    $hasRelationshipAttribute = false;
+                    foreach ($property->getAttributes() as $attribute) {
+                        $attrName = $attribute->getName();
+                        if ($attrName === 'Relationship' || str_ends_with($attrName, '\\Relationship')) {
+                            $hasRelationshipAttribute = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasRelationshipAttribute) {
+                        continue;
+                    }
+
+                    // Check if property has DateTime attribute
+                    $isDateTime = false;
+                    foreach ($property->getAttributes() as $attribute) {
+                        $attrName = $attribute->getName();
+                        if ($attrName === 'DateTime' || str_ends_with($attrName, '\\DateTime')) {
+                            $isDateTime = true;
+                            break;
+                        }
+                    }
+
+                    // Get property type (string like 'null|\\Carbon\\Carbon' or 'string')
+                    $typeName = $property->getType();
+                    $typeName = is_string($typeName) ? $typeName : null;
+
+                    // Normalize Carbon detection
+                    if ($typeName) {
+                        $normalized = ltrim($typeName, '?\\');
+                        if (str_contains($normalized, 'Carbon\\Carbon') || str_ends_with($normalized, 'Carbon')) {
+                            $isDateTime = true;
+                            // Store consistent type for downstream faker mapping
+                            $typeName = 'Carbon\\Carbon';
+                        }
+                    }
+
+                    $properties[] = [
+                        'name' => $propName,
+                        'type' => $typeName,
+                        'isDateTime' => $isDateTime,
+                    ];
                 }
+
+                // Only consider the first class in this file
+                break 2;
             }
-
-            if ($hasRelationshipAttribute) {
-                continue;
-            }
-
-            // Check if property has DateTime attribute
-            $isDateTime = ! empty($property->getAttributes(DateTime::class));
-
-            // Get property type
-            $type = $property->getType();
-            $typeName = null;
-            if ($type) {
-                $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : (string) $type;
-            }
-
-            $properties[] = [
-                'name' => $property->getName(),
-                'type' => $typeName,
-                'isDateTime' => $isDateTime,
-            ];
         }
 
         return $properties;

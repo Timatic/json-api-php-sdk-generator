@@ -6,6 +6,7 @@ namespace JsonApiSdk\Commands;
 
 use Crescat\SaloonSdkGenerator\CodeGenerator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
+use Crescat\SaloonSdkGenerator\Data\TaggedOutputFile;
 use Crescat\SaloonSdkGenerator\Parsers\OpenApiParser;
 use JsonApiSdk\Generators\JsonApiConnectorGenerator;
 use JsonApiSdk\Generators\JsonApiDtoGenerator;
@@ -160,6 +161,7 @@ class GenerateCommand extends Command
 
         if ($generateTests) {
             $postProcessors[] = new JsonApiPestTestGenerator($config);
+            $postProcessors[] = new JsonApiFactoryGenerator($config);
         }
 
         // Generate code
@@ -218,6 +220,13 @@ class GenerateCommand extends Command
 
         foreach ($result->requestClasses ?? [] as $name => $file) {
             $files[] = "{$outputDir}/src/Requests/{$name}.php";
+        }
+
+        // Additional files (e.g., factories/tests) with explicit paths
+        foreach ($result->additionalFiles ?? [] as $file) {
+            if ($file instanceof TaggedOutputFile) {
+                $files[] = rtrim($outputDir, '/').'/'.ltrim($file->path, '/');
+            }
         }
 
         $io->listing($files);
@@ -285,9 +294,22 @@ class GenerateCommand extends Command
             }
         }
 
-        // Write Tests (from post-processors)
+        // Write additional files (tests, factories, etc.) from post-processors
         foreach ($result->additionalFiles ?? [] as $file) {
+            if ($file instanceof TaggedOutputFile) {
+                // Respect provided relative path
+                $path = rtrim($outputDir, '/').'/'.ltrim($file->path, '/');
+                $content = is_string($file->file) ? $file->file : (string) $file->file;
+                if ($this->writeFile($path, $content, $force)) {
+                    $written++;
+                } else {
+                    $skipped++;
+                }
+                continue;
+            }
+
             if ($file instanceof \Nette\PhpGenerator\PhpFile) {
+                // Default PhpFile additional files go into tests directory (backwards compatible)
                 $className = $this->getClassNameFromPhpFile($file);
                 $path = "{$outputDir}/tests/{$className}.php";
                 if ($this->writeFile($path, (string) $file, $force)) {
