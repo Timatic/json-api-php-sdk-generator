@@ -1,0 +1,15 @@
+it('{{ testDescription }}', function () {
+    $mockClient = Saloon::fake([
+        {{ requestClass }}::class => MockResponse::make([], 200),
+    ]);
+
+    // Create DTO with sample data
+    {{ dtoInstantiation }}
+
+    $request = new {{ requestClass }}({{ mutationMethodArguments }});
+    $this->{{ clientName }}->send($request);
+
+    Saloon::assertSent({{ requestClass }}::class);
+
+{{ bodyValidation }}
+});

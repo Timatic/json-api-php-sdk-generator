@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: Sample JSON:API
+  version: 1.0.0
+  description: A simple API for testing the generator
+servers:
+  - url: https://api.example.com/v1
+
+paths:
+  /articles:
+    get:
+      operationId: listArticles
+      summary: List all articles
+      tags:
+        - Articles
+      responses:
+        '200':
+          description: A list of articles
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/ArticleCollection'
+    post:
+      operationId: createArticle
+      summary: Create a new article
+      tags:
+        - Articles
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/ArticleRequest'
+      responses:
+        '201':
+          description: Article created
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/ArticleResource'
+
+  /articles/{article}:
+    get:
+      operationId: getArticle
+      summary: Get a single article
+      tags:
+        - Articles
+      parameters:
+        - name: article
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single article
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/ArticleResource'
+    patch:
+      operationId: updateArticle
+      summary: Update an article
+      tags:
+        - Articles
+      parameters:
+        - name: article
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/ArticleRequest'
+      responses:
+        '200':
+          description: Article updated
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/ArticleResource'
+    delete:
+      operationId: deleteArticle
+      summary: Delete an article
+      tags:
+        - Articles
+      parameters:
+        - name: article
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Article deleted
+
+  /authors:
+    get:
+      operationId: listAuthors
+      summary: List all authors
+      tags:
+        - Authors
+      responses:
+        '200':
+          description: A list of authors
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/AuthorCollection'
+
+  /authors/{author}:
+    get:
+      operationId: getAuthor
+      summary: Get a single author
+      tags:
+        - Authors
+      parameters:
+        - name: author
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single author
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/AuthorResource'
+
+components:
+  schemas:
+    Article:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        author:
+          $ref: '#/components/schemas/Author'
+      required:
+        - id
+        - title
+
+    Author:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+        - id
+        - name
+
+    ArticleResource:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Article'
+
+    ArticleCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Article'
+
+    ArticleRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            type:
+              type: string
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+
+    AuthorResource:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Author'
+
+    AuthorCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'

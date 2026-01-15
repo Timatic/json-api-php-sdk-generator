@@ -1,0 +1,45 @@
+{
+    "name": "jsonapi-sdk/generator",
+    "description": "Generate PHP SDKs from OpenAPI specifications for JSON:API endpoints",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "JsonApiSdk\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JsonApiSdk\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "symfony/console": "^7.0",
+        "crescat-io/saloon-sdk-generator": "dev-add-hooks-to-pest-generator",
+        "saloonphp/pagination-plugin": "^2.0",
+        "webmozart/assert": "^1.11"
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.0",
+        "fakerphp/faker": "^1.23"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/tomasvanrijsse/saloon-sdk-generator"
+        }
+    ],
+    "bin": ["bin/jsonapi-sdk"],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "pest",
+        "test:coverage": "pest --coverage"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

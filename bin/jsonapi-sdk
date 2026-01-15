@@ -1,0 +1,29 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Find autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',           // When installed as a project
+    __DIR__ . '/../../../autoload.php',            // When installed as a dependency
+];
+
+$autoloaderFound = false;
+foreach ($autoloadPaths as $autoloadPath) {
+    if (file_exists($autoloadPath)) {
+        require $autoloadPath;
+        $autoloaderFound = true;
+        break;
+    }
+}
+
+if (!$autoloaderFound) {
+    fwrite(STDERR, "Could not find autoloader. Please run 'composer install'.\n");
+    exit(1);
+}
+
+use JsonApiSdk\Application;
+
+$app = new Application();
+$app->run();

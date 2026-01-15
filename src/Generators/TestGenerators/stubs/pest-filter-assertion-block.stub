@@ -1,0 +1,9 @@
+
+    // Verify filter query parameters are present
+    Saloon::assertSent(function (Request $request) {
+        $query = $request->query()->all();
+
+        {{ filterAssertions }}
+
+        return true;
+    });

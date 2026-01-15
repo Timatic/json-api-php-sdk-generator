@@ -1,0 +1,12 @@
+<?php //auto-generated
+
+{{ dtoImports }}
+{{ requestImports }}
+use Carbon\Carbon;
+use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\Request;
+use Saloon\Laravel\Facades\Saloon;
+
+beforeEach(function () {
+    $this->{{ clientName }} = new {{ namespace }}\{{ connectorName }}({{ connectorArgs }});
+});
