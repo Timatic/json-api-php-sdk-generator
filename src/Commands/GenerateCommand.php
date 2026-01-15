@@ -220,10 +220,6 @@ class GenerateCommand extends Command
             $files[] = "{$outputDir}/src/Requests/{$name}.php";
         }
 
-        foreach ($result->resourceClasses ?? [] as $name => $file) {
-            $files[] = "{$outputDir}/src/Resources/{$name}.php";
-        }
-
         $io->listing($files);
         $io->note("Total: " . count($files) . " files");
     }
@@ -247,7 +243,7 @@ class GenerateCommand extends Command
         $written += $foundationCount;
 
         // Write config file
-        $configContent = $this->generateConfigFile($configKey, $connectorName, $baseUrl);
+        $configContent = $this->generateConfigFile($configKey, $baseUrl);
         $configPath = "{$outputDir}/config/{$configKey}.php";
         if ($this->writeFile($configPath, $configContent, $force)) {
             $written++;
@@ -282,17 +278,6 @@ class GenerateCommand extends Command
             $className = $this->getClassNameFromPhpFile($file);
             $subDir = $this->getRequestSubdirectory($file);
             $path = "{$outputDir}/src/Requests/{$subDir}/{$className}.php";
-            if ($this->writeFile($path, (string) $file, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        // Write Resources
-        foreach ($result->resourceClasses ?? [] as $file) {
-            $className = $this->getClassNameFromPhpFile($file);
-            $path = "{$outputDir}/src/Resources/{$className}.php";
             if ($this->writeFile($path, (string) $file, $force)) {
                 $written++;
             } else {
@@ -360,7 +345,7 @@ class GenerateCommand extends Command
         return true;
     }
 
-    private function generateConfigFile(string $configKey, string $connectorName, string $baseUrl): string
+    private function generateConfigFile(string $configKey, string $baseUrl): string
     {
         $stubPath = dirname(__DIR__) . '/Stubs/config.php.stub';
         $stub = file_get_contents($stubPath);
@@ -369,7 +354,7 @@ class GenerateCommand extends Command
         $envPrefix = strtoupper(str_replace(['-', '.'], '_', $configKey));
 
         $replacements = [
-            '{{ connectorName }}' => $connectorName,
+            '{{ connectorName }}' => ucfirst($configKey),
             '{{ envPrefix }}' => $envPrefix,
             '{{ defaultBaseUrl }}' => $baseUrl,
         ];
