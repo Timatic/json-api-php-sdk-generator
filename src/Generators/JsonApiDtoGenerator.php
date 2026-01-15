@@ -15,17 +15,20 @@ use Illuminate\Support\Str;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\PhpFile;
-use JsonApiSdk\Foundation\Hydration\Attributes\DateTime;
-use JsonApiSdk\Foundation\Hydration\Attributes\Property;
-use JsonApiSdk\Foundation\Hydration\Attributes\Relationship;
-use JsonApiSdk\Foundation\Hydration\Model;
-use JsonApiSdk\Foundation\Hydration\RelationType;
 
 class JsonApiDtoGenerator extends Generator
 {
     protected array $generated = [];
 
     protected ApiSpecification $specification;
+
+    /**
+     * Get Foundation class with target namespace
+     */
+    protected function foundationClass(string $relativePath): string
+    {
+        return $this->config->namespace . '\\Foundation\\' . $relativePath;
+    }
 
     public function generate(ApiSpecification $specification): PhpFile|array
     {
@@ -55,8 +58,12 @@ class JsonApiDtoGenerator extends Generator
         $namespace = $classFile
             ->addNamespace("{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}");
 
+        // Get Foundation classes with target namespace
+        $modelClass = $this->foundationClass('Hydration\\Model');
+        $propertyClass = $this->foundationClass('Hydration\\Attributes\\Property');
+
         // Extend Model instead of Spatie Data
-        $classType->setExtends(Model::class)
+        $classType->setExtends($modelClass)
             ->setComment($schema->title ?? '')
             ->addComment('')
             ->addComment(Utils::wrapLongLines($schema->description ?? ''));
@@ -78,8 +85,8 @@ class JsonApiDtoGenerator extends Generator
         $this->addRelationshipProperties($classType, $namespace, $schema);
 
         // Add imports
-        $namespace->addUse(Model::class);
-        $namespace->addUse(Property::class);
+        $namespace->addUse($modelClass);
+        $namespace->addUse($propertyClass);
 
         $namespace->add($classType);
 
@@ -118,6 +125,10 @@ class JsonApiDtoGenerator extends Generator
         $type = $this->convertOpenApiTypeToPhp($propertySpec);
         $name = NameHelper::safeVariableName($propertyName);
 
+        // Get Foundation classes with target namespace
+        $propertyClass = $this->foundationClass('Hydration\\Attributes\\Property');
+        $dateTimeClass = $this->foundationClass('Hydration\\Attributes\\DateTime');
+
         // Create public property with #[Property] attribute
         $property = $classType->addProperty($name)
             ->setPublic()
@@ -125,15 +136,15 @@ class JsonApiDtoGenerator extends Generator
             ->setNullable(true);
 
         // Add #[Property] attribute
-        $property->addAttribute(Property::class);
+        $property->addAttribute($propertyClass);
 
         // Check if this is a datetime field by format OR by naming pattern
         $isDateTime = ($propertySpec instanceof Schema && $propertySpec->format === 'date-time')
             || $this->looksLikeDateTimeField($propertyName);
 
         if ($isDateTime) {
-            $property->addAttribute(DateTime::class);
-            $namespace->addUse(DateTime::class);
+            $property->addAttribute($dateTimeClass);
+            $namespace->addUse($dateTimeClass);
 
             // Change type to Carbon if datetime
             if (! str_contains($type, 'Carbon')) {
@@ -276,9 +287,13 @@ class JsonApiDtoGenerator extends Generator
             return;
         }
 
+        // Get Foundation classes with target namespace
+        $relationshipClass = $this->foundationClass('Hydration\\Attributes\\Relationship');
+        $relationTypeClass = $this->foundationClass('Hydration\\RelationType');
+
         // Import required classes
-        $namespace->addUse(Relationship::class);
-        $namespace->addUse(RelationType::class);
+        $namespace->addUse($relationshipClass);
+        $namespace->addUse($relationTypeClass);
         $namespace->addUse(Collection::class);
 
         foreach ($relationships->properties as $relationName => $relationSpec) {
@@ -318,7 +333,7 @@ class JsonApiDtoGenerator extends Generator
             }
 
             // Add Relationship attribute (use full class name for attribute)
-            $property->addAttribute(Relationship::class, [
+            $property->addAttribute($relationshipClass, [
                 new Literal("{$relatedModel}::class"),
                 new Literal("RelationType::{$relationType}"),
             ]);

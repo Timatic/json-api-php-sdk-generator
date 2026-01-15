@@ -14,10 +14,13 @@ class DeleteRequestTestGenerator
 
     protected GeneratedCode $generatedCode;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode)
+    protected string $namespace;
+
+    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
     {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
+        $this->namespace = $namespace;
     }
 
     /**

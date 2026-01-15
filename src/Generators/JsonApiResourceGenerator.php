@@ -9,10 +9,16 @@ use Crescat\SaloonSdkGenerator\Data\Generator\Parameter;
 use Crescat\SaloonSdkGenerator\Generators\ResourceGenerator;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
 use Nette\PhpGenerator\Method;
-use JsonApiSdk\Foundation\Hydration\Model;
 
 class JsonApiResourceGenerator extends ResourceGenerator
 {
+    /**
+     * Get Foundation class with target namespace
+     */
+    protected function foundationClass(string $relativePath): string
+    {
+        return $this->config->namespace . '\\Foundation\\' . $relativePath;
+    }
     /**
      * Hook: Filter out PUT requests - not supported in JSON:API
      */
@@ -77,10 +83,11 @@ class JsonApiResourceGenerator extends ResourceGenerator
             return;
         }
 
-        $namespace->addUse(Model::class);
+        $modelClass = $this->foundationClass('Hydration\\Model');
+        $namespace->addUse($modelClass);
 
         $dataParam = new Parameter(
-            type: Model::class.'|array|null',
+            type: $modelClass . '|array|null',
             nullable: true,
             name: 'data',
             description: 'Request data',

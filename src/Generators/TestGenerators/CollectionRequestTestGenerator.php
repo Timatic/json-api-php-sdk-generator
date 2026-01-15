@@ -26,10 +26,13 @@ class CollectionRequestTestGenerator
 
     protected GeneratedCode $generatedCode;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode)
+    protected string $namespace;
+
+    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
     {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
+        $this->namespace = $namespace;
     }
 
     /**
@@ -434,7 +437,7 @@ class CollectionRequestTestGenerator
                 $assertions[] = "->{$propertyName}->not->toBeNull()";
             } else {
                 // For single relationships, verify it's an instance of the related model
-                $assertions[] = "->{$propertyName}->toBeInstanceOf(\\{config_namespace}\\Dto\\{$relatedModel}::class)";
+                $assertions[] = "->{$propertyName}->toBeInstanceOf(\\{$this->namespace}\\Dto\\{$relatedModel}::class)";
             }
         }
 

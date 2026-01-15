@@ -43,11 +43,12 @@ class JsonApiPestTestGenerator extends PestTestGenerator
         // Store generated code for later use
         $this->generatedCode = $generatedCode;
 
-        // Instantiate test generators with the parsed ApiSpecification and GeneratedCode
-        $this->collectionTestGenerator = new CollectionRequestTestGenerator($specification, $generatedCode);
-        $this->mutationTestGenerator = new MutationRequestTestGenerator($specification, $generatedCode);
-        $this->singularGetTestGenerator = new SingularGetRequestTestGenerator($specification, $generatedCode);
-        $this->deleteTestGenerator = new DeleteRequestTestGenerator($specification, $generatedCode);
+        // Instantiate test generators with the parsed ApiSpecification, GeneratedCode, and namespace
+        $namespace = $config->namespace;
+        $this->collectionTestGenerator = new CollectionRequestTestGenerator($specification, $generatedCode, $namespace);
+        $this->mutationTestGenerator = new MutationRequestTestGenerator($specification, $generatedCode, $namespace);
+        $this->singularGetTestGenerator = new SingularGetRequestTestGenerator($specification, $generatedCode, $namespace);
+        $this->deleteTestGenerator = new DeleteRequestTestGenerator($specification, $generatedCode, $namespace);
 
         // Call parent to continue normal processing
         return parent::process($config, $specification, $generatedCode);

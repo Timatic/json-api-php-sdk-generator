@@ -15,16 +15,20 @@ use Nette\PhpGenerator\PhpFile;
 use Saloon\Http\Response;
 use Saloon\PaginationPlugin\Contracts\Paginatable;
 use JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
-use JsonApiSdk\Foundation\Hydration\Facades\Hydrator;
-use JsonApiSdk\Foundation\Hydration\Model;
-use JsonApiSdk\Foundation\Requests\Concerns\HasFilters;
-use JsonApiSdk\Foundation\Requests\Concerns\HasIncludes;
 
 class JsonApiRequestGenerator extends RequestGenerator
 {
     use DtoHelperTrait;
 
     private ApiSpecification $specification;
+
+    /**
+     * Get Foundation class with target namespace
+     */
+    protected function foundationClass(string $relativePath): string
+    {
+        return $this->config->namespace . '\\Foundation\\' . $relativePath;
+    }
 
     public function generate(ApiSpecification $specification): PhpFile|array
     {
@@ -79,6 +83,10 @@ class JsonApiRequestGenerator extends RequestGenerator
      */
     protected function customizeRequestClass(ClassType $classType, $namespace, Endpoint $endpoint): void
     {
+        // Get Foundation classes with target namespace
+        $hasFiltersClass = $this->foundationClass('Requests\\Concerns\\HasFilters');
+        $hasIncludesClass = $this->foundationClass('Requests\\Concerns\\HasIncludes');
+
         if ($this->isCollectionRequest($endpoint)) {
             // Add Paginatable interface to all collection requests
             $namespace->addUse(Paginatable::class);
@@ -86,14 +94,14 @@ class JsonApiRequestGenerator extends RequestGenerator
 
             // Add HasFilters trait if collection has filter parameters in the endpoint
             if ($this->hasFilterParameters($endpoint)) {
-                $namespace->addUse(HasFilters::class);
-                $classType->addTrait(HasFilters::class);
+                $namespace->addUse($hasFiltersClass);
+                $classType->addTrait($hasFiltersClass);
             }
 
             // Add HasIncludes trait if endpoint has include parameter
             if ($this->hasIncludeParameter($endpoint)) {
-                $namespace->addUse(HasIncludes::class);
-                $classType->addTrait(HasIncludes::class);
+                $namespace->addUse($hasIncludesClass);
+                $classType->addTrait($hasIncludesClass);
 
                 // Add relationship-specific include methods
                 $this->addIncludeMethods($classType, $namespace, $endpoint);
@@ -115,10 +123,11 @@ class JsonApiRequestGenerator extends RequestGenerator
             return;
         }
 
-        $namespace->addUse(Model::class);
+        $modelClass = $this->foundationClass('Hydration\\Model');
+        $namespace->addUse($modelClass);
 
         $dataParam = new Parameter(
-            type: '\\'.Model::class.'|array|null',
+            type: '\\' . $modelClass . '|array|null',
             nullable: true,
             name: 'data',
             description: 'Request data',
@@ -229,8 +238,11 @@ class JsonApiRequestGenerator extends RequestGenerator
         // Determine DTO class name from endpoint
         $dtoClassName = $this->getDtoClassName($endpoint);
 
+        // Get Foundation classes with target namespace
+        $hydratorClass = $this->foundationClass('Hydration\\Facades\\Hydrator');
+
         // Add imports
-        $namespace->addUse(Hydrator::class);
+        $namespace->addUse($hydratorClass);
         $namespace->addUse(Response::class);
         $namespace->addUse("{$this->config->namespace}\\Dto\\{$dtoClassName}");
 

@@ -13,6 +13,7 @@ use JsonApiSdk\Generators\JsonApiFactoryGenerator;
 use JsonApiSdk\Generators\JsonApiPestTestGenerator;
 use JsonApiSdk\Generators\JsonApiRequestGenerator;
 use JsonApiSdk\Generators\JsonApiResourceGenerator;
+use JsonApiSdk\Services\FoundationCopier;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -139,45 +140,37 @@ class GenerateCommand extends Command
             resourceNamespaceSuffix: 'Resources',
             requestNamespaceSuffix: 'Requests',
             dtoNamespaceSuffix: 'Dto',
-            baseResourcePath: 'src',
         );
 
         // Parse specification
         $io->section('Parsing OpenAPI Specification');
 
         try {
-            $specContent = $this->loadSpec($specPath);
-            $parser = new OpenApiParser();
-            $specification = $parser->parse($specContent);
+            // OpenApiParser::build() takes a file path and parses it directly
+            $parser = OpenApiParser::build($specPath);
+            $specification = $parser->parse();
             $io->success('Specification parsed successfully');
         } catch (\Exception $e) {
             $io->error("Failed to parse specification: {$e->getMessage()}");
             return Command::FAILURE;
         }
 
-        // Configure generators
-        $generators = [
-            new JsonApiDtoGenerator($config),
-            new JsonApiRequestGenerator($config),
-            new JsonApiConnectorGenerator($config),
-            new JsonApiResourceGenerator($config),
-        ];
-
+        // Configure post-processors
         $postProcessors = [];
 
         if ($generateTests) {
             $postProcessors[] = new JsonApiPestTestGenerator($config);
         }
 
-        // Note: Factory generation requires the DTOs to be loaded first
-        // This would need to run after the initial generation
-
         // Generate code
         $io->section('Generating SDK');
 
         $codeGenerator = new CodeGenerator(
             config: $config,
-            generators: $generators,
+            requestGenerator: new JsonApiRequestGenerator($config),
+            resourceGenerator: new JsonApiResourceGenerator($config),
+            dtoGenerator: new JsonApiDtoGenerator($config),
+            connectorGenerator: new JsonApiConnectorGenerator($config),
             postProcessors: $postProcessors,
         );
 
@@ -195,7 +188,7 @@ class GenerateCommand extends Command
             $this->listGeneratedFiles($io, $result, $outputDir, $configKey);
         } else {
             $io->section('Writing Files');
-            $this->writeGeneratedFiles($io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl);
+            $this->writeGeneratedFiles($io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace);
             $io->success("SDK generated successfully in {$outputDir}");
         }
 
@@ -205,19 +198,6 @@ class GenerateCommand extends Command
     private function isUrl(string $path): bool
     {
         return str_starts_with($path, 'http://') || str_starts_with($path, 'https://');
-    }
-
-    private function loadSpec(string $path): string
-    {
-        if ($this->isUrl($path)) {
-            $content = file_get_contents($path);
-            if ($content === false) {
-                throw new \RuntimeException("Failed to fetch specification from URL: {$path}");
-            }
-            return $content;
-        }
-
-        return file_get_contents($path);
     }
 
     private function listGeneratedFiles(SymfonyStyle $io, $result, string $outputDir, string $configKey): void
@@ -255,10 +235,16 @@ class GenerateCommand extends Command
         bool $force,
         string $configKey,
         string $connectorName,
-        string $baseUrl
+        string $baseUrl,
+        string $namespace
     ): void {
         $written = 0;
         $skipped = 0;
+
+        // Copy Foundation files with rewritten namespaces
+        $foundationCopier = new FoundationCopier();
+        $foundationCount = $foundationCopier->copy($outputDir, $namespace);
+        $written += $foundationCount;
 
         // Write config file
         $configContent = $this->generateConfigFile($configKey, $connectorName, $baseUrl);
@@ -269,10 +255,56 @@ class GenerateCommand extends Command
             $skipped++;
         }
 
-        // Write connector
-        if (isset($result->connectorClass)) {
-            foreach ($result->connectorClass as $name => $file) {
-                $path = "{$outputDir}/src/{$name}.php";
+        // Write connector (single PhpFile, not array)
+        if ($result->connectorClass !== null) {
+            $className = $this->getClassNameFromPhpFile($result->connectorClass);
+            $path = "{$outputDir}/src/{$className}.php";
+            if ($this->writeFile($path, (string) $result->connectorClass, $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        // Write DTOs
+        foreach ($result->dtoClasses ?? [] as $file) {
+            $className = $this->getClassNameFromPhpFile($file);
+            $path = "{$outputDir}/src/Dto/{$className}.php";
+            if ($this->writeFile($path, (string) $file, $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        // Write Requests - extract namespace suffix for subdirectory
+        foreach ($result->requestClasses ?? [] as $file) {
+            $className = $this->getClassNameFromPhpFile($file);
+            $subDir = $this->getRequestSubdirectory($file);
+            $path = "{$outputDir}/src/Requests/{$subDir}/{$className}.php";
+            if ($this->writeFile($path, (string) $file, $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        // Write Resources
+        foreach ($result->resourceClasses ?? [] as $file) {
+            $className = $this->getClassNameFromPhpFile($file);
+            $path = "{$outputDir}/src/Resources/{$className}.php";
+            if ($this->writeFile($path, (string) $file, $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        // Write Tests (from post-processors)
+        foreach ($result->additionalFiles ?? [] as $file) {
+            if ($file instanceof \Nette\PhpGenerator\PhpFile) {
+                $className = $this->getClassNameFromPhpFile($file);
+                $path = "{$outputDir}/tests/{$className}.php";
                 if ($this->writeFile($path, (string) $file, $force)) {
                     $written++;
                 } else {
@@ -281,61 +313,36 @@ class GenerateCommand extends Command
             }
         }
 
-        // Write DTOs
-        foreach ($result->dtoClasses ?? [] as $name => $file) {
-            $path = "{$outputDir}/src/Dto/{$name}.php";
-            if ($this->writeFile($path, (string) $file, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        // Write Requests
-        foreach ($result->requestClasses ?? [] as $collection => $requests) {
-            if (is_array($requests)) {
-                foreach ($requests as $name => $file) {
-                    $path = "{$outputDir}/src/Requests/{$collection}/{$name}.php";
-                    if ($this->writeFile($path, (string) $file, $force)) {
-                        $written++;
-                    } else {
-                        $skipped++;
-                    }
-                }
-            } else {
-                $path = "{$outputDir}/src/Requests/{$collection}.php";
-                if ($this->writeFile($path, (string) $requests, $force)) {
-                    $written++;
-                } else {
-                    $skipped++;
-                }
-            }
-        }
-
-        // Write Resources
-        foreach ($result->resourceClasses ?? [] as $name => $file) {
-            $path = "{$outputDir}/src/Resources/{$name}.php";
-            if ($this->writeFile($path, (string) $file, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        // Write Tests
-        foreach ($result->testClasses ?? [] as $name => $file) {
-            $path = "{$outputDir}/{$name}";
-            if ($this->writeFile($path, (string) $file, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-        }
-
         $io->text("Written: {$written} files");
         if ($skipped > 0) {
             $io->text("Skipped: {$skipped} files (already exist, use --force to overwrite)");
         }
+    }
+
+    /**
+     * Extract the class name from a PhpFile
+     */
+    private function getClassNameFromPhpFile(\Nette\PhpGenerator\PhpFile $file): string
+    {
+        foreach ($file->getNamespaces() as $namespace) {
+            foreach ($namespace->getClasses() as $class) {
+                return $class->getName();
+            }
+        }
+        throw new \RuntimeException('No class found in PhpFile');
+    }
+
+    /**
+     * Extract subdirectory name from request namespace (e.g., "Articles" from "Sample\Sdk\Requests\Articles")
+     */
+    private function getRequestSubdirectory(\Nette\PhpGenerator\PhpFile $file): string
+    {
+        foreach ($file->getNamespaces() as $namespace) {
+            $parts = explode('\\', $namespace->getName());
+            // Return the last part (e.g., "Articles" from "Sample\Sdk\Requests\Articles")
+            return end($parts);
+        }
+        return 'Misc';
     }
 
     private function writeFile(string $path, string $content, bool $force): bool

@@ -11,8 +11,6 @@ use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\PhpFile;
 use Saloon\Http\Request;
 use Saloon\PaginationPlugin\Contracts\HasPagination;
-use JsonApiSdk\Foundation\Pagination\JsonApiPaginator;
-use JsonApiSdk\Foundation\Responses\JsonApiResponse;
 
 class JsonApiConnectorGenerator extends ConnectorGenerator
 {
@@ -40,10 +38,15 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         $namespace->addUse(HasPagination::class);
         $classType->addImplement(HasPagination::class);
 
+        // Build Foundation class names with target namespace
+        $foundationNamespace = $this->config->namespace . '\\Foundation';
+        $jsonApiPaginatorClass = $foundationNamespace . '\\Pagination\\JsonApiPaginator';
+        $jsonApiResponseClass = $foundationNamespace . '\\Responses\\JsonApiResponse';
+
         // Add additional imports for custom methods
         $namespace->addUse(Request::class);
-        $namespace->addUse(JsonApiPaginator::class);
-        $namespace->addUse(JsonApiResponse::class);
+        $namespace->addUse($jsonApiPaginatorClass);
+        $namespace->addUse($jsonApiResponseClass);
 
         // Remove any constructor parameters added by parent generator
         // (we handle auth via config in defaultHeaders)
@@ -117,9 +120,11 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
 
     public function addPaginateMethod(ClassType $classType): void
     {
+        $jsonApiPaginatorClass = $this->config->namespace . '\\Foundation\\Pagination\\JsonApiPaginator';
+
         $paginate = $classType->addMethod('paginate')
             ->setPublic()
-            ->setReturnType(JsonApiPaginator::class);
+            ->setReturnType($jsonApiPaginatorClass);
 
         $paginate->addParameter('request')
             ->setType(Request::class);

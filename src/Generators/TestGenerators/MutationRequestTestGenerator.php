@@ -24,10 +24,13 @@ class MutationRequestTestGenerator
 
     protected GeneratedCode $generatedCode;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode)
+    protected string $namespace;
+
+    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
     {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
+        $this->namespace = $namespace;
     }
 
     /**
@@ -106,7 +109,7 @@ class MutationRequestTestGenerator
         $stateArray = $this->generateFactoryStateArray($endpoint);
 
         $lines = [];
-        $lines[] = "    \$dto = \\{config_namespace}\\Dto\\{$dtoClassName}::factory()->state([";
+        $lines[] = "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::factory()->state([";
         $lines[] = $stateArray;
         $lines[] = '    ])->make();';
 
