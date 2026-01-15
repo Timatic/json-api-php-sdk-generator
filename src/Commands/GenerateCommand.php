@@ -71,6 +71,12 @@ class GenerateCommand extends Command
                 'Generate Faker factories'
             )
             ->addOption(
+                'foundation',
+                null,
+                InputOption::VALUE_NONE,
+                'Generate Foundation support files'
+            )
+            ->addOption(
                 'dry-run',
                 null,
                 InputOption::VALUE_NONE,
@@ -107,6 +113,7 @@ class GenerateCommand extends Command
         $connectorName = $input->getOption('connector-name');
         $generateTests = $input->getOption('tests');
         $generateFactories = $input->getOption('factories');
+        $generateFoundation = $input->getOption('foundation');
         $dryRun = $input->getOption('dry-run');
         $force = $input->getOption('force');
         $baseUrl = $input->getOption('base-url');
@@ -132,6 +139,7 @@ class GenerateCommand extends Command
             "Config key: {$configKey}",
             "Tests: " . ($generateTests ? 'Yes' : 'No'),
             "Factories: " . ($generateFactories ? 'Yes' : 'No'),
+            "Foundation: " . ($generateFoundation ? 'Yes' : 'No'),
         ]);
 
         // Create config
@@ -190,7 +198,7 @@ class GenerateCommand extends Command
             $this->listGeneratedFiles($io, $result, $outputDir, $configKey);
         } else {
             $io->section('Writing Files');
-            $this->writeGeneratedFiles($io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace);
+            $this->writeGeneratedFiles($io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace, $generateFoundation);
             $io->success("SDK generated successfully in {$outputDir}");
         }
 
@@ -241,15 +249,18 @@ class GenerateCommand extends Command
         string $configKey,
         string $connectorName,
         string $baseUrl,
-        string $namespace
+        string $namespace,
+        bool $generateFoundation
     ): void {
         $written = 0;
         $skipped = 0;
 
-        // Copy Foundation files with rewritten namespaces
-        $foundationCopier = new FoundationCopier();
-        $foundationCount = $foundationCopier->copy($outputDir, $namespace);
-        $written += $foundationCount;
+        // Copy Foundation files only when explicitly requested
+        if ($generateFoundation) {
+            $foundationCopier = new FoundationCopier();
+            $foundationCount = $foundationCopier->copy($outputDir, $namespace);
+            $written += $foundationCount;
+        }
 
         // Write config file
         $configContent = $this->generateConfigFile($configKey, $baseUrl);
