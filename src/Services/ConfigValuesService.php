@@ -9,12 +9,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ConfigValuesService
 {
     /**
-     * Resolve config key and base URL.
+     * Resolve config key, base URL, and connector name.
      *
      * When $generateFoundation is true, prompts the user interactively.
      * Otherwise, reads from existing config file.
      *
-     * @return array{configKey: string, baseUrl: string}|null Returns null if no existing config found (without foundation)
+     * @return array{configKey: string, baseUrl: string, connectorName: string}|null Returns null if no existing config found (without foundation)
      */
     public function resolve(
         string $outputDir,
@@ -23,7 +23,7 @@ class ConfigValuesService
         SymfonyStyle $io
     ): ?array {
         if ($generateFoundation) {
-            return $this->promptForConfig($connectorName, $io);
+            return $this->promptForConfig($io);
         }
 
         return $this->readExisting($outputDir);
@@ -31,16 +31,15 @@ class ConfigValuesService
 
     /**
      * Prompt user interactively for config values.
+     * Connector name is derived from config key.
      *
-     * @return array{configKey: string, baseUrl: string}
+     * @return array{configKey: string, baseUrl: string, connectorName: string}
      */
-    private function promptForConfig(string $connectorName, SymfonyStyle $io): array
+    private function promptForConfig(SymfonyStyle $io): array
     {
-        $defaultConfigKey = strtolower(preg_replace('/Connector$/', '', $connectorName));
-
         $configKey = $io->ask(
             'Laravel config key for the SDK (e.g., "myapi" results in config("myapi.base_url"))',
-            $defaultConfigKey
+            'myapi'
         );
 
         $baseUrl = $io->ask(
@@ -48,16 +47,19 @@ class ConfigValuesService
             'https://api.example.com'
         );
 
+        $connectorName = ucfirst($configKey) . 'Connector';
+
         return [
             'configKey' => $configKey,
             'baseUrl' => $baseUrl,
+            'connectorName' => $connectorName,
         ];
     }
 
     /**
      * Read existing config from the output directory.
      *
-     * @return array{configKey: string, baseUrl: string}|null
+     * @return array{configKey: string, baseUrl: string, connectorName: string}|null
      */
     public function readExisting(string $outputDir): ?array
     {
@@ -78,9 +80,12 @@ class ConfigValuesService
         preg_match("/env\('[A-Z_]+_BASE_URL',\s*'([^']+)'\)/", $content, $matches);
         $baseUrl = $matches[1] ?? 'https://api.example.com';
 
+        $connectorName = ucfirst($configKey) . 'Connector';
+
         return [
             'configKey' => $configKey,
             'baseUrl' => $baseUrl,
+            'connectorName' => $connectorName,
         ];
     }
 }

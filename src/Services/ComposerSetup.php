@@ -57,13 +57,14 @@ class ComposerSetup
      * - Runs `composer require` and `composer require --dev` to add needed packages.
      * - Merges PSR-4 autoload mappings for Generator and Factories; keeps existing entries.
      * - Adds scripts for Pest, Pint, and Larastan; enables Pest plugin.
+     * - Adds Laravel auto-discovery for the ServiceProvider.
      * - Runs `composer dump-autoload`.
      */
-    public function setup(string $namespace, SymfonyStyle $io, bool $dryRun = false): void
+    public function setup(string $namespace, SymfonyStyle $io, bool $dryRun = false, ?string $connectorName = null): void
     {
         $outputDir = dirname($this->composerPath);
 
-        $this->mergeDefaults($namespace, $io, $dryRun);
+        $this->mergeDefaults($namespace, $io, $dryRun, $connectorName);
 
         $this->runComposerRequires($outputDir, $io, $dryRun);
 
@@ -77,6 +78,7 @@ class ComposerSetup
         // Runtime packages (skip php platform constraint in commands)
         $require = [
             'saloonphp/saloon:^3.0',
+            'saloonphp/laravel-plugin:^3.0',
             'nesbot/carbon:^2.0|^3.0',
             'saloonphp/pagination-plugin:^2.0',
         ];
@@ -101,7 +103,7 @@ class ComposerSetup
         $this->runComposer($outputDir, 'composer require --no-interaction --dev '.implode(' ', $quotedRequireDev), $io, $dryRun);
     }
 
-    private function mergeDefaults(string $namespace, SymfonyStyle $io, bool $dryRun): void
+    private function mergeDefaults(string $namespace, SymfonyStyle $io, bool $dryRun, ?string $connectorName = null): void
     {
         $ns = rtrim($namespace, '\\').'\\';
 
@@ -121,18 +123,30 @@ class ComposerSetup
             'config' => ['allow-plugins' => ['pestphp/pest-plugin' => true, 'ergebnis/composer-normalize' => true]],
         ];
 
+        // Add Laravel auto-discovery if connector name is provided
+        if ($connectorName) {
+            $appName = preg_replace('/Connector$/', '', $connectorName);
+            $serviceProviderClass = $ns . 'Providers\\' . $appName . 'ServiceProvider';
+
+            $defaults['extra'] = [
+                'laravel' => [
+                    'providers' => [$serviceProviderClass],
+                ],
+            ];
+        }
+
         $this->composerJson = array_replace_recursive($defaults, $this->composerJson);
 
         $newContent = json_encode($this->composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";
 
         if ($dryRun) {
-            $io->note('Would update composer.json (autoload, autoload-dev, scripts, config.allow-plugins)');
+            $io->note('Would update composer.json (autoload, autoload-dev, scripts, config.allow-plugins, extra.laravel)');
 
             return;
         }
 
         file_put_contents($this->composerPath, $newContent);
-        $io->writeln('- Updated: composer.json (autoload, scripts, plugins)');
+        $io->writeln('- Updated: composer.json (autoload, scripts, plugins, laravel auto-discovery)');
     }
 
     private function runComposer(string $workingDir, string $command, SymfonyStyle $io, bool $dryRun): void

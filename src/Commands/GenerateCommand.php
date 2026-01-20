@@ -14,6 +14,9 @@ use JsonApiSdk\Generators\JsonApiFactoryGenerator;
 use JsonApiSdk\Generators\JsonApiPestTestGenerator;
 use JsonApiSdk\Generators\JsonApiRequestGenerator;
 use JsonApiSdk\Generators\JsonApiResourceGenerator;
+use JsonApiSdk\Generators\ServiceProviderGenerator;
+use JsonApiSdk\Generators\TestSetupGenerator;
+use JsonApiSdk\Generators\FoundationTestGenerator;
 use JsonApiSdk\Services\ConfigValuesService;
 use JsonApiSdk\Services\FoundationCopier;
 use JsonApiSdk\Services\ComposerSetup;
@@ -110,19 +113,21 @@ class GenerateCommand extends Command
         $force = $input->getOption('force');
 
         $generateFoundation = $input->getOption('foundation');
-        $connectorName = $input->getOption('connector-name');
+        $connectorNameOption = $input->getOption('connector-name');
 
-        // Determine config key and base URL
+        // Determine config key, base URL, and connector name
         $configValuesService = new ConfigValuesService();
-        $config = $configValuesService->resolve($outputDir, $connectorName, $generateFoundation, $this->io);
+        $configValues = $configValuesService->resolve($outputDir, $connectorNameOption, $generateFoundation, $this->io);
 
-        if ($config === null) {
+        if ($configValues === null) {
             $this->io->error('No existing SDK found in output directory. Use --foundation to generate a new SDK.');
             return Command::FAILURE;
         }
 
-        $configKey = $config['configKey'];
-        $baseUrl = $config['baseUrl'];
+        $configKey = $configValues['configKey'];
+        $baseUrl = $configValues['baseUrl'];
+        // Use connector name from config (derived from config key) when --foundation is used
+        $connectorName = $configValues['connectorName'];
 
         $this->io->title('JSON:API SDK Generator');
 
@@ -265,9 +270,40 @@ class GenerateCommand extends Command
             $foundationCount = $foundationCopier->copy($outputDir, $namespace);
             $written += $foundationCount;
 
+            // Generate ServiceProvider
+            $serviceProviderGenerator = new ServiceProviderGenerator($namespace, $configKey, $connectorName);
+            $serviceProviderFile = $serviceProviderGenerator->generate();
+            $serviceProviderClassName = $serviceProviderGenerator->getClassName();
+            $serviceProviderPath = "{$outputDir}/src/Providers/{$serviceProviderClassName}.php";
+            if ($this->writeFile($serviceProviderPath, (string) $serviceProviderFile, $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+
+            // Generate test setup files (Pest.php and TestCase.php)
+            $testSetupGenerator = new TestSetupGenerator($namespace, $configKey, $connectorName, $baseUrl);
+
+            // Write Pest.php
+            $pestPhpPath = "{$outputDir}/tests/Pest.php";
+            if ($this->writeFile($pestPhpPath, $testSetupGenerator->generatePestPhp(), $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+
+            // Write TestCase.php
+            $testCaseFile = $testSetupGenerator->generateTestCase();
+            $testCasePath = "{$outputDir}/tests/TestCase.php";
+            if ($this->writeFile($testCasePath, (string) $testCaseFile, $force)) {
+                $written++;
+            } else {
+                $skipped++;
+            }
+
             // After copying Foundation files, ensure composer.json exists and add required packages and settings
             $io->section('Composer setup');
-            $composerSetup->setup($namespace, $io, $dryRun);
+            $composerSetup->setup($namespace, $io, $dryRun, $connectorName);
         }
 
         // Write config file
