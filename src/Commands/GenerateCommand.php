@@ -14,7 +14,10 @@ use JsonApiSdk\Generators\JsonApiFactoryGenerator;
 use JsonApiSdk\Generators\JsonApiPestTestGenerator;
 use JsonApiSdk\Generators\JsonApiRequestGenerator;
 use JsonApiSdk\Generators\JsonApiResourceGenerator;
+use JsonApiSdk\Services\ConfigValuesService;
 use JsonApiSdk\Services\FoundationCopier;
+use JsonApiSdk\Services\ComposerSetup;
+use JsonApiSdk\Generators\ConfigGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -29,6 +32,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class GenerateCommand extends Command
 {
+    private SymfonyStyle $io;
+
     protected function configure(): void
     {
         $this
@@ -43,13 +48,6 @@ class GenerateCommand extends Command
                 InputOption::VALUE_REQUIRED,
                 'Output directory for generated SDK',
                 './output'
-            )
-            ->addOption(
-                'namespace',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Root namespace for generated code',
-                'App\\Sdk'
             )
             ->addOption(
                 'connector-name',
@@ -88,53 +86,57 @@ class GenerateCommand extends Command
                 InputOption::VALUE_NONE,
                 'Overwrite existing files'
             )
-            ->addOption(
-                'config-key',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Laravel config key for the SDK (e.g., "myapi" results in config("myapi.base_url"))'
-            )
-            ->addOption(
-                'base-url',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Default base URL for the API',
-                'https://api.example.com'
-            );
+;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
 
         $specPath = $input->getArgument('spec');
         $outputDir = $input->getOption('output');
-        $namespace = $input->getOption('namespace');
-        $connectorName = $input->getOption('connector-name');
+        $composerPath = rtrim($outputDir, '/').'/composer.json';
+
+        try {
+            $composerSetup = new ComposerSetup($composerPath);
+            $namespace = $composerSetup->getNamespace();
+        } catch (\RuntimeException $e) {
+            $this->io->error($e->getMessage());
+            return Command::FAILURE;
+        }
         $generateTests = $input->getOption('tests');
         $generateFactories = $input->getOption('factories');
-        $generateFoundation = $input->getOption('foundation');
         $dryRun = $input->getOption('dry-run');
         $force = $input->getOption('force');
-        $baseUrl = $input->getOption('base-url');
 
-        // Derive config key from connector name if not provided
-        $configKey = $input->getOption('config-key')
-            ?? strtolower(preg_replace('/Connector$/', '', $connectorName));
+        $generateFoundation = $input->getOption('foundation');
+        $connectorName = $input->getOption('connector-name');
 
-        $io->title('JSON:API SDK Generator');
+        // Determine config key and base URL
+        $configValuesService = new ConfigValuesService();
+        $config = $configValuesService->resolve($outputDir, $connectorName, $generateFoundation, $this->io);
 
-        // Validate spec file
-        if (!$this->isUrl($specPath) && !file_exists($specPath)) {
-            $io->error("Specification file not found: {$specPath}");
+        if ($config === null) {
+            $this->io->error('No existing SDK found in output directory. Use --foundation to generate a new SDK.');
             return Command::FAILURE;
         }
 
-        $io->section('Configuration');
-        $io->listing([
+        $configKey = $config['configKey'];
+        $baseUrl = $config['baseUrl'];
+
+        $this->io->title('JSON:API SDK Generator');
+
+        // Validate spec file
+        if (!$this->isUrl($specPath) && !file_exists($specPath)) {
+            $this->io->error("Specification file not found: {$specPath}");
+            return Command::FAILURE;
+        }
+
+        $this->io->section('Configuration');
+        $this->io->listing([
             "Spec: {$specPath}",
             "Output: {$outputDir}",
-            "Namespace: {$namespace}",
+            "Namespace (from composer.json): {$namespace}",
             "Connector: {$connectorName}",
             "Config key: {$configKey}",
             "Tests: " . ($generateTests ? 'Yes' : 'No'),
@@ -152,15 +154,15 @@ class GenerateCommand extends Command
         );
 
         // Parse specification
-        $io->section('Parsing OpenAPI Specification');
+        $this->io->section('Parsing OpenAPI Specification');
 
         try {
             // OpenApiParser::build() takes a file path and parses it directly
             $parser = OpenApiParser::build($specPath);
             $specification = $parser->parse();
-            $io->success('Specification parsed successfully');
+            $this->io->success('Specification parsed successfully');
         } catch (\Exception $e) {
-            $io->error("Failed to parse specification: {$e->getMessage()}");
+            $this->io->error("Failed to parse specification: {$e->getMessage()}");
             return Command::FAILURE;
         }
 
@@ -173,7 +175,7 @@ class GenerateCommand extends Command
         }
 
         // Generate code
-        $io->section('Generating SDK');
+        $this->io->section('Generating SDK');
 
         $codeGenerator = new CodeGenerator(
             config: $config,
@@ -186,20 +188,20 @@ class GenerateCommand extends Command
 
         try {
             $result = $codeGenerator->run($specification);
-            $io->success('Code generated successfully');
+            $this->io->success('Code generated successfully');
         } catch (\Exception $e) {
-            $io->error("Failed to generate code: {$e->getMessage()}");
+            $this->io->error("Failed to generate code: {$e->getMessage()}");
             return Command::FAILURE;
         }
 
         // Write files
         if ($dryRun) {
-            $io->section('Dry Run - Files that would be generated:');
-            $this->listGeneratedFiles($io, $result, $outputDir, $configKey);
+            $this->io->section('Dry Run - Files that would be generated:');
+            $this->listGeneratedFiles($this->io, $result, $outputDir, $configKey);
         } else {
-            $io->section('Writing Files');
-            $this->writeGeneratedFiles($io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace, $generateFoundation);
-            $io->success("SDK generated successfully in {$outputDir}");
+            $this->io->section('Writing Files');
+            $this->writeGeneratedFiles($this->io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace, $generateFoundation, $dryRun, $composerSetup);
+            $this->io->success("SDK generated successfully in {$outputDir}");
         }
 
         return Command::SUCCESS;
@@ -250,7 +252,9 @@ class GenerateCommand extends Command
         string $connectorName,
         string $baseUrl,
         string $namespace,
-        bool $generateFoundation
+        bool $generateFoundation,
+        bool $dryRun,
+        ComposerSetup $composerSetup
     ): void {
         $written = 0;
         $skipped = 0;
@@ -260,12 +264,14 @@ class GenerateCommand extends Command
             $foundationCopier = new FoundationCopier();
             $foundationCount = $foundationCopier->copy($outputDir, $namespace);
             $written += $foundationCount;
+
+            // After copying Foundation files, ensure composer.json exists and add required packages and settings
+            $io->section('Composer setup');
+            $composerSetup->setup($namespace, $io, $dryRun);
         }
 
         // Write config file
-        $configContent = $this->generateConfigFile($configKey, $baseUrl);
-        $configPath = "{$outputDir}/config/{$configKey}.php";
-        if ($this->writeFile($configPath, $configContent, $force)) {
+        if ((new ConfigGenerator())->write($outputDir, $configKey, $baseUrl, $force)) {
             $written++;
         } else {
             $skipped++;
@@ -378,20 +384,4 @@ class GenerateCommand extends Command
         return true;
     }
 
-    private function generateConfigFile(string $configKey, string $baseUrl): string
-    {
-        $stubPath = dirname(__DIR__) . '/Stubs/config.php.stub';
-        $stub = file_get_contents($stubPath);
-
-        // Generate env prefix from config key (e.g., "myapi" -> "MYAPI")
-        $envPrefix = strtoupper(str_replace(['-', '.'], '_', $configKey));
-
-        $replacements = [
-            '{{ connectorName }}' => ucfirst($configKey),
-            '{{ envPrefix }}' => $envPrefix,
-            '{{ defaultBaseUrl }}' => $baseUrl,
-        ];
-
-        return str_replace(array_keys($replacements), array_values($replacements), $stub);
-    }
 }

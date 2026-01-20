@@ -36,7 +36,8 @@
     "prefer-stable": true,
     "scripts": {
         "test": "pest",
-        "test:coverage": "pest --coverage"
+        "test:coverage": "pest --coverage",
+        "analyse": "phpstan analyse --memory-limit=2G"
     },
     "config": {
         "allow-plugins": {

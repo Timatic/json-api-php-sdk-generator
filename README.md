@@ -29,3 +29,16 @@ Options:
 
 When you run the command for the first time, you should add the `--foundation` flag.
 This will add all the necessary files that are 'static' and these can be changed manually afterward.
+
+Recommended first-time setup
+1. Create your project, e.g. `git init`
+2. Initialize Composer `composer init`, this generator depends on the psr-4 autoload namespace and the package name.
+3. Then run the generator with `--foundation`.
+
+What `--foundation` does comes down to:
+- Verifies a `composer.json` exists and checks if it contains a PSR-4 `autoload` section.
+- Runs `composer require` to add runtime dependencies like `saloonphp/saloon`, `nesbot/carbon`, `saloonphp/pagination-plugin`
+- Runs `composer require --dev` to add development dependencies like: `faker`,`pest`, `pint` and `larastan`
+- Updates your `composer.json` with PSR-4 autoload mappings
+- Adds composer scripts `test`, `coverage`, `format` and `analyse`
+- Enables the Pest plugin in `config.allow-plugins`.

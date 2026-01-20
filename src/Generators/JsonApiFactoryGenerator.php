@@ -13,14 +13,20 @@ use Crescat\SaloonSdkGenerator\Generator;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\PhpFile;
-use JsonApiSdk\Foundation\Factories\Factory;
-use JsonApiSdk\Foundation\Hydration\Attributes\DateTime;
 
 class JsonApiFactoryGenerator implements PostProcessor
 {
     protected array $generated = [];
 
     protected Config $config;
+
+    /**
+     * Get Foundation class with target namespace
+     */
+    protected function foundationClass(string $relativePath): string
+    {
+        return $this->config->namespace . '\\Foundation\\' . $relativePath;
+    }
 
     public function process(Config $config, ApiSpecification $specification, GeneratedCode $generatedCode,): PhpFile|array|null
     {
@@ -42,11 +48,14 @@ class JsonApiFactoryGenerator implements PostProcessor
         $classFile = new PhpFile;
         $namespace = $classFile->addNamespace("{$this->config->namespace}\\Factories");
 
+        // Get Foundation classes with target namespace
+        $factoryClass = $this->foundationClass('Factories\\Factory');
+
         // Extend base Factory
-        $classType->setExtends(Factory::class);
+        $classType->setExtends($factoryClass);
 
         // Add imports
-        $namespace->addUse(Factory::class);
+        $namespace->addUse($factoryClass);
         $dtoFullClass = "{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}\\{$dtoClassName}";
         $namespace->addUse($dtoFullClass);
 
