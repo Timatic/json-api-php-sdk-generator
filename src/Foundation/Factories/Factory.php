@@ -24,6 +24,7 @@ abstract class Factory
 
     public static function new(): static
     {
+        /** @phpstan-ignore-next-line new.static */
         return new static;
     }
 

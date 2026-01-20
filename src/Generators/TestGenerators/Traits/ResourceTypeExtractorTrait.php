@@ -25,7 +25,7 @@ trait ResourceTypeExtractorTrait
             $name = $endpoint->collection;
         } else {
             // Fallback: parse from endpoint path
-            $path = $endpoint->path;
+            $path = $endpoint->pathAsString();
             // Extract first path segment (e.g., /budgets -> budgets)
             preg_match('#^/([^/]+)#', $path, $matches);
 

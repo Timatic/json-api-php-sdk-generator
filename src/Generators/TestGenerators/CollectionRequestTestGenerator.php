@@ -253,7 +253,7 @@ class CollectionRequestTestGenerator
             }
 
             // Only add filters without operators (simpler)
-            if (! $operator && count($filters) < $maxFilters) {
+            if (! $operator) {
                 $value = $this->formatAsCode($this->generateValue($property));
                 $filters[] = "->filter('{$property}', {$value})";
 

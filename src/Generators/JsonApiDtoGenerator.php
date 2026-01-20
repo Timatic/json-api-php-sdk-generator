@@ -189,21 +189,24 @@ class JsonApiDtoGenerator extends Generator
         }
 
         // Handle anyOf, oneOf, allOf
-        if (isset($schema->anyOf) && is_array($schema->anyOf)) {
+        if (isset($schema->anyOf)) {
             return $this->handleCompositeType($schema->anyOf);
         }
 
-        if (isset($schema->oneOf) && is_array($schema->oneOf)) {
+        if (isset($schema->oneOf)) {
             return $this->handleCompositeType($schema->oneOf);
         }
 
-        if (isset($schema->allOf) && is_array($schema->allOf)) {
+        if (isset($schema->allOf)) {
             return $this->handleCompositeType($schema->allOf);
         }
 
-        // Handle array union types
+        // Handle array union types (OpenAPI 3.1.0+)
         if (is_array($schema->type)) {
-            return collect($schema->type)
+            /** @var array<string> $types */
+            $types = $schema->type;
+
+            return collect($types)
                 ->map(fn ($type) => $this->mapType($type))
                 ->implode('|');
         }

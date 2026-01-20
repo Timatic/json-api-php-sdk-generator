@@ -170,8 +170,8 @@ class GenerateCommand extends Command
         $postProcessors = [];
 
         if ($generateTests) {
-            $postProcessors[] = new JsonApiPestTestGenerator($config);
-            $postProcessors[] = new JsonApiFactoryGenerator($config);
+            $postProcessors[] = new JsonApiPestTestGenerator();
+            $postProcessors[] = new JsonApiFactoryGenerator();
         }
 
         // Generate code
