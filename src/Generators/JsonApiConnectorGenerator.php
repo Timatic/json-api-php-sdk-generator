@@ -11,6 +11,7 @@ use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\PhpFile;
 use Saloon\Http\Request;
 use Saloon\PaginationPlugin\Contracts\HasPagination;
+use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
 class JsonApiConnectorGenerator extends ConnectorGenerator
 {
@@ -37,6 +38,10 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         // Add HasPagination interface
         $namespace->addUse(HasPagination::class);
         $classType->addImplement(HasPagination::class);
+
+        // Add AlwaysThrowOnErrors trait
+        $namespace->addUse(AlwaysThrowOnErrors::class);
+        $classType->addTrait(AlwaysThrowOnErrors::class);
 
         // Build Foundation class names with target namespace
         $foundationNamespace = $this->config->namespace . '\\Foundation';
