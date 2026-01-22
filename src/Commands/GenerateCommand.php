@@ -95,6 +95,12 @@ class GenerateCommand extends Command
                 InputOption::VALUE_NONE,
                 'Overwrite existing files'
             )
+            ->addOption(
+                'exclude-put-requests',
+                null,
+                InputOption::VALUE_NONE,
+                'Exclude PUT requests from generated SDK (default: PUT requests are included)'
+            )
 ;
     }
 
@@ -121,6 +127,7 @@ class GenerateCommand extends Command
         $generateFoundation = $input->getOption('foundation');
         $connectorNameOption = $input->getOption('connector-name');
         $baseUrlOption = $input->getOption('base-url');
+        $excludePut = $input->getOption('exclude-put-requests');
 
         // Validate required options when --foundation is used
         if ($generateFoundation && $connectorNameOption === null) {
@@ -160,6 +167,7 @@ class GenerateCommand extends Command
             "Tests: " . ($generateTests ? 'Yes' : 'No'),
             "Factories: " . ($generateFactories ? 'Yes' : 'No'),
             "Foundation: " . ($generateFoundation ? 'Yes' : 'No'),
+            "Exclude PUT: " . ($excludePut ? 'Yes' : 'No'),
         ]);
 
         // Create config
@@ -169,6 +177,9 @@ class GenerateCommand extends Command
             resourceNamespaceSuffix: 'Resources',
             requestNamespaceSuffix: 'Requests',
             dtoNamespaceSuffix: 'Dto',
+            extra: [
+                'excludePut' => $excludePut,
+            ],
         );
 
         // Parse specification

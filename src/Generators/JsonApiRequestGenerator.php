@@ -42,7 +42,11 @@ class JsonApiRequestGenerator extends RequestGenerator
      */
     protected function shouldIncludeEndpoint(Endpoint $endpoint): bool
     {
-        return ! $endpoint->method->isPut();
+        if ($endpoint->method->isPut()) {
+            return ! ($this->config->extra['excludePut'] ?? false);
+        }
+
+        return true;
     }
 
     /**

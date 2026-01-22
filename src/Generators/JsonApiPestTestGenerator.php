@@ -76,7 +76,11 @@ class JsonApiPestTestGenerator extends PestTestGenerator
     protected function shouldIncludeEndpoint(Endpoint $endpoint): bool
     {
         if ($endpoint->method->isPut()) {
-            return false;
+            $excludePut = $this->config->extra['excludePut'] ?? false;
+            if ($excludePut) {
+                echo "  ⊘ Skipping PUT: {$endpoint->name}\n";
+                return false;
+            }
         }
 
         // Skip endpoints without DTOs (endpoints that don't return data)
