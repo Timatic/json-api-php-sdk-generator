@@ -303,7 +303,7 @@ class GenerateCommand extends Command
             $serviceProviderFile = $serviceProviderGenerator->generate();
             $serviceProviderClassName = $serviceProviderGenerator->getClassName();
             $serviceProviderPath = "{$outputDir}/src/Providers/{$serviceProviderClassName}.php";
-            if ($this->writeFile($serviceProviderPath, (string) $serviceProviderFile, $force)) {
+            if ($this->writeFile($serviceProviderPath, (string)$serviceProviderFile, $force)) {
                 $written++;
             } else {
                 $skipped++;
@@ -323,7 +323,7 @@ class GenerateCommand extends Command
             // Write TestCase.php
             $testCaseFile = $testSetupGenerator->generateTestCase();
             $testCasePath = "{$outputDir}/tests/TestCase.php";
-            if ($this->writeFile($testCasePath, (string) $testCaseFile, $force)) {
+            if ($this->writeFile($testCasePath, (string)$testCaseFile, $force)) {
                 $written++;
             } else {
                 $skipped++;
@@ -332,23 +332,22 @@ class GenerateCommand extends Command
             // After copying Foundation files, ensure composer.json exists and add required packages and settings
             $io->section('Composer setup');
             $composerSetup->setup($namespace, $io, $dryRun, $connectorName);
-        }
 
-        // Write config file
-        if ((new ConfigGenerator())->write($outputDir, $configKey, $baseUrl, $force)) {
-            $written++;
-        } else {
-            $skipped++;
-        }
-
-        // Write connector (single PhpFile, not array)
-        if ($result->connectorClass !== null) {
-            $className = $this->getClassNameFromPhpFile($result->connectorClass);
-            $path = "{$outputDir}/src/{$className}.php";
-            if ($this->writeFile($path, (string) $result->connectorClass, $force)) {
-                $written++;
+            if ((new ConfigGenerator())->write($outputDir, $configKey, $baseUrl, $force)){
+              $written++;
             } else {
                 $skipped++;
+            }
+
+            // Write connector (single PhpFile, not array)
+            if ($generateFoundation && $result->connectorClass !== null) {
+                $className = $this->getClassNameFromPhpFile($result->connectorClass);
+                $path = "{$outputDir}/src/{$className}.php";
+                if ($this->writeFile($path, (string)$result->connectorClass, $force)) {
+                    $written++;
+                } else {
+                    $skipped++;
+                }
             }
         }
 
@@ -378,7 +377,7 @@ class GenerateCommand extends Command
         // Write additional files (tests, factories, etc.) from post-processors
         foreach ($result->additionalFiles ?? [] as $file) {
             if ($file instanceof TaggedOutputFile) {
-                // Respect provided relative path
+                // Respect provided relative path for factories
                 $path = rtrim($outputDir, '/').'/'.ltrim($file->path, '/');
                 $content = is_string($file->file) ? $file->file : (string) $file->file;
                 if ($this->writeFile($path, $content, $force)) {
