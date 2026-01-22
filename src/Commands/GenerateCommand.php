@@ -219,6 +219,10 @@ class GenerateCommand extends Command
         } else {
             $this->io->section('Writing Files');
             $this->writeGeneratedFiles($this->io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace, $generateFoundation, $dryRun, $composerSetup);
+
+            // Run Pint to format generated files
+            (new PintRunner())->run($outputDir, $this->io);
+
             $this->io->success("SDK generated successfully in {$outputDir}");
         }
 
