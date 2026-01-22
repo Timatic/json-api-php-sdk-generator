@@ -15,20 +15,20 @@ trait DtoHelperTrait
      */
     protected function getDtoClassName(Endpoint $endpoint): string
     {
-        // Use collection name to determine DTO
-        if ($endpoint->collection) {
-            $resourceName = NameHelper::resourceClassName($endpoint->collection);
+        // First, try to get the schema name from the parsed response
+        if ($endpoint->response && isset($endpoint->response['schema'])) {
+            return $endpoint->response['schema'];
+        }
 
-            // Use Laravel's Str::singular() for correct singular form
-            return Str::singular($resourceName);
+        // Fallback: derive from collection name
+        if ($endpoint->collection) {
+            return Str::singular(NameHelper::safeClassName($endpoint->collection));
         }
 
         // Fallback: try to parse from endpoint name
         $name = $endpoint->name ?: NameHelper::pathBasedName($endpoint);
-        // Remove method prefix (get, post, patch)
         $name = preg_replace('/^(get|post|patch)/i', '', $name);
 
-        // Use Laravel's Str::singular() for correct singular form
-        return Str::singular(NameHelper::resourceClassName($name));
+        return Str::singular(NameHelper::safeClassName($name));
     }
 }
