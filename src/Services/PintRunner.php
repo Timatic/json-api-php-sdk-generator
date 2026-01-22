@@ -17,7 +17,7 @@ class PintRunner
             return;
         }
 
-        $io->writeln('Running Pint...');
+        $io->writeln('- Running Pint...');
 
         $descriptorSpec = [
             1 => ['pipe', 'w'],

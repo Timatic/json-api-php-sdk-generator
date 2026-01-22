@@ -137,6 +137,9 @@ class ComposerSetup
 
         $this->composerJson = array_replace_recursive($defaults, $this->composerJson);
 
+        // Remove empty values to prevent {} becoming [] in JSON output
+        $this->composerJson = array_filter($this->composerJson);
+
         $newContent = json_encode($this->composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";
 
         if ($dryRun) {
