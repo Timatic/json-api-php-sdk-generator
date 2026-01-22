@@ -10,13 +10,13 @@ It will list all these command options:
 ```
 Options:
   -o, --output=OUTPUT                  Output directory for generated SDK [default: "./output"]
-  -t, --tests                          Generate Pest tests
-  -f, --factories                      Generate Faker factories  
       --foundation                     Generate Foundation support files
       --connector-name=CONNECTOR-NAME  Name of the Connector class (e.g., "TimaticConnector"). 
                                        Config key is derived from this (e.g., "timatic"). 
                                        Required when using --foundation
       --base-url=BASE-URL              Default base URL for the API.
+      --skip-tests                     Skip generating Pest tests
+      --skip-factories                 Skip generating Faker factories
       --dry-run                        Show what would be generated without writing files
       --force                          Overwrite existing files
 ```

@@ -60,16 +60,16 @@ class GenerateCommand extends Command
                 'Name of the Connector class (e.g., "TimaticConnector"). Config key is derived from this (e.g., "timatic"). Required when using --foundation'
             )
             ->addOption(
-                'tests',
-                't',
+                'skip-tests',
+                null,
                 InputOption::VALUE_NONE,
-                'Generate Pest tests'
+                'Skip generating Pest tests'
             )
             ->addOption(
-                'factories',
-                'f',
+                'skip-factories',
+                null,
                 InputOption::VALUE_NONE,
-                'Generate Faker factories'
+                'Skip generating Faker factories'
             )
             ->addOption(
                 'foundation',
@@ -113,8 +113,8 @@ class GenerateCommand extends Command
             $this->io->error($e->getMessage());
             return Command::FAILURE;
         }
-        $generateTests = $input->getOption('tests');
-        $generateFactories = $input->getOption('factories');
+        $generateTests = !$input->getOption('skip-tests');
+        $generateFactories = !$input->getOption('skip-factories');
         $dryRun = $input->getOption('dry-run');
         $force = $input->getOption('force');
 
@@ -125,8 +125,8 @@ class GenerateCommand extends Command
         // Validate required options when --foundation is used
         if ($generateFoundation && $connectorNameOption === null) {
             $this->io->error('The --connector-name option is required when using --foundation');
-                return Command::FAILURE;
-            }
+            return Command::FAILURE;
+        }
 
         // Determine config key, base URL, and connector name
         $configValuesService = new ConfigValuesService();
