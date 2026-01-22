@@ -58,7 +58,9 @@ class ServiceProviderGenerator
 );
 
 // Register {$this->connectorName} as singleton
-\$this->app->singleton({$appName}Connector::class);
+\$this->app->singleton({$appName}Connector::class, fn () => new {$appName}Connector(
+    config('{$this->configKey}.api_token'),
+));
 
 // Register alias
 \$this->app->alias({$appName}Connector::class, '{$this->configKey}');

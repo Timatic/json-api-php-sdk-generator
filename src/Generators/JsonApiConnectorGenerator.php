@@ -53,32 +53,37 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         $namespace->addUse($jsonApiPaginatorClass);
         $namespace->addUse($jsonApiResponseClass);
 
-        // Remove any constructor parameters added by parent generator
-        // (we handle auth via config in defaultHeaders)
+        $configKey = $this->getConfigKey();
+
+        // Override constructor to use property promotion (ServiceProvider injects the token)
         if ($classType->hasMethod('__construct')) {
             $constructor = $classType->getMethod('__construct');
-            // Clear all parameters and body - we don't need constructor auth
+            // Clear existing parameters
             foreach ($constructor->getParameters() as $param) {
                 $constructor->removeParameter($param->getName());
             }
+            // Add promoted property with nullable default
+            $constructor->addPromotedParameter('bearerToken')
+                ->setProtected()
+                ->setType('?string')
+                ->setDefaultValue(null);
             $constructor->setBody('');
         }
-
-        $configKey = $this->getConfigKey();
 
         // Override resolveBaseUrl to use Laravel config
         $resolveBaseUrl = $classType->getMethod('resolveBaseUrl');
         $resolveBaseUrl->setBody("return config('{$configKey}.base_url');");
 
-        // Store all resource methods (to re-add them later in correct order)
-        $resourceMethods = [];
+        // Remove resource methods (we don't generate Resource classes)
+        $knownMethods = ['__construct', 'resolveBaseUrl', 'defaultAuth', 'defaultConfig'];
         foreach ($classType->getMethods() as $methodName => $method) {
-            $resourceMethods[$methodName] = $method;
+            if (!in_array($methodName, $knownMethods, true)) {
             $classType->removeMethod($methodName);
         }
+        }
 
-        // Add defaultHeaders method (after resolveBaseUrl)
-        $this->addDefaultHeaders($classType, $configKey);
+        // Add defaultHeaders method
+        $this->addDefaultHeaders($classType);
 
         // Add resolveResponseClass method
         $this->addResolveResponseClassMethod($classType);
@@ -105,23 +110,20 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         }
     }
 
-    public function addDefaultHeaders(ClassType $classType, string $configKey): void
+    public function addDefaultHeaders(ClassType $classType): void
     {
         $defaultHeaders = $classType->addMethod('defaultHeaders')
             ->setProtected()
             ->setReturnType('array');
 
-        $defaultHeaders->addBody('$headers = [');
-        $defaultHeaders->addBody('    \'Accept\' => \'application/vnd.api+json\',');
-        $defaultHeaders->addBody('    \'Content-Type\' => \'application/vnd.api+json\',');
-        $defaultHeaders->addBody('];');
-        $defaultHeaders->addBody('');
-        $defaultHeaders->addBody("if (\$token = config('{$configKey}.api_token')) {");
-        $defaultHeaders->addBody('    $headers[\'Authorization\'] = "Bearer {$token}";');
-        $defaultHeaders->addBody('}');
-        $defaultHeaders->addBody('');
-        $defaultHeaders->addBody('return $headers;');
+        $defaultHeaders->setBody(<<<'PHP'
+return [
+    'Accept' => 'application/vnd.api+json',
+    'Content-Type' => 'application/vnd.api+json',
+];
+PHP);
     }
+
 
     public function addPaginateMethod(ClassType $classType): void
     {
