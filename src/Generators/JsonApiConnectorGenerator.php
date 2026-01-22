@@ -78,8 +78,8 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         $knownMethods = ['__construct', 'resolveBaseUrl', 'defaultAuth', 'defaultConfig'];
         foreach ($classType->getMethods() as $methodName => $method) {
             if (!in_array($methodName, $knownMethods, true)) {
-            $classType->removeMethod($methodName);
-        }
+                $classType->removeMethod($methodName);
+            }
         }
 
         // Add defaultHeaders method
@@ -90,11 +90,6 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
 
         // Add paginate method
         $this->addPaginateMethod($classType);
-
-        // Re-add resource methods after custom configuration methods
-        foreach ($resourceMethods as $methodName => $method) {
-            $classType->setMethods(array_merge($classType->getMethods(), [$methodName => $method]));
-        }
 
         return $phpFile;
     }
