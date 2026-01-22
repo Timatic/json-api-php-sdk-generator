@@ -91,6 +91,13 @@ class FoundationCopier
             $content
         );
 
+        // Replace fully qualified class names (with leading backslash)
+        $content = str_replace(
+            '\\JsonApiSdk\\Foundation\\',
+            "\\{$targetNamespace}\\Foundation\\",
+            $content
+        );
+
         return $content;
     }
 
