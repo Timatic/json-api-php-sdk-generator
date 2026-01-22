@@ -20,6 +20,7 @@ use JsonApiSdk\Generators\FoundationTestGenerator;
 use JsonApiSdk\Services\ConfigValuesService;
 use JsonApiSdk\Services\FoundationCopier;
 use JsonApiSdk\Services\ComposerSetup;
+use JsonApiSdk\Services\PintRunner;
 use JsonApiSdk\Generators\ConfigGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -54,10 +55,9 @@ class GenerateCommand extends Command
             )
             ->addOption(
                 'connector-name',
-                'c',
+                null,
                 InputOption::VALUE_REQUIRED,
-                'Name of the Connector class',
-                'ApiConnector'
+                'Name of the Connector class (e.g., "TimaticConnector"). Config key is derived from this (e.g., "timatic"). Required when using --foundation'
             )
             ->addOption(
                 'tests',
@@ -76,6 +76,12 @@ class GenerateCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Generate Foundation support files'
+            )
+            ->addOption(
+                'base-url',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Default base URL for the API (optional)'
             )
             ->addOption(
                 'dry-run',
@@ -114,10 +120,17 @@ class GenerateCommand extends Command
 
         $generateFoundation = $input->getOption('foundation');
         $connectorNameOption = $input->getOption('connector-name');
+        $baseUrlOption = $input->getOption('base-url');
+
+        // Validate required options when --foundation is used
+        if ($generateFoundation && $connectorNameOption === null) {
+            $this->io->error('The --connector-name option is required when using --foundation');
+                return Command::FAILURE;
+            }
 
         // Determine config key, base URL, and connector name
         $configValuesService = new ConfigValuesService();
-        $configValues = $configValuesService->resolve($outputDir, $connectorNameOption, $generateFoundation, $this->io);
+        $configValues = $configValuesService->resolve($outputDir, $connectorNameOption, $baseUrlOption, $generateFoundation);
 
         if ($configValues === null) {
             $this->io->error('No existing SDK found in output directory. Use --foundation to generate a new SDK.');

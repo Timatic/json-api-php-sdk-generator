@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'base_url' => env('{{ envPrefix }}_BASE_URL', '{{ defaultBaseUrl }}'),
+    'base_url' => {{ baseUrlValue }},
 
     /*
     |--------------------------------------------------------------------------

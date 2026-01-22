@@ -7,17 +7,22 @@ class ConfigGenerator
     /**
      * Generate config file content from stub.
      */
-    public function generate(string $configKey, string $baseUrl): string
+    public function generate(string $configKey, ?string $baseUrl): string
     {
         $stubPath = dirname(__DIR__) . '/Stubs/config.php.stub';
         $stub = file_get_contents($stubPath);
 
         $envPrefix = strtoupper(str_replace(['-', '.'], '_', $configKey));
 
+        // Build the base_url env() call - with or without default
+        $baseUrlValue = $baseUrl !== null
+            ? "env('{$envPrefix}_BASE_URL', '{$baseUrl}')"
+            : "env('{$envPrefix}_BASE_URL')";
+
         $replacements = [
             '{{ connectorName }}' => ucfirst($configKey),
             '{{ envPrefix }}' => $envPrefix,
-            '{{ defaultBaseUrl }}' => $baseUrl,
+            '{{ baseUrlValue }}' => $baseUrlValue,
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $stub);
@@ -28,7 +33,7 @@ class ConfigGenerator
      *
      * @return bool True if file was written, false if skipped (already exists without force)
      */
-    public function write(string $outputDir, string $configKey, string $baseUrl, bool $force): bool
+    public function write(string $outputDir, string $configKey, ?string $baseUrl, bool $force): bool
     {
         $content = $this->generate($configKey, $baseUrl);
         $path = "{$outputDir}/config/{$configKey}.php";
