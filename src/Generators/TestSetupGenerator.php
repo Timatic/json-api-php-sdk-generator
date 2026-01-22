@@ -13,7 +13,7 @@ class TestSetupGenerator
         private string $namespace,
         private string $configKey,
         private string $connectorName,
-        private string $baseUrl,
+        private ?string $baseUrl,
     ) {}
 
     /**
@@ -81,6 +81,10 @@ PHP);
     {
         $envVarPrefix = strtoupper($this->configKey);
 
+        $baseUrlEnvCall = $this->baseUrl !== null
+            ? "env('{$envVarPrefix}_BASE_URL', '{$this->baseUrl}')"
+            : "env('{$envVarPrefix}_BASE_URL')";
+
         $method = $class->addMethod('getEnvironmentSetUp')
             ->setProtected()
             ->setReturnType('void');
@@ -94,7 +98,7 @@ if (file_exists(dirname(__DIR__).'/.env')) {
 }
 
 // Set config values for testing
-\$app['config']->set('{$this->configKey}.base_url', env('{$envVarPrefix}_BASE_URL', '{$this->baseUrl}'));
+\$app['config']->set('{$this->configKey}.base_url', {$baseUrlEnvCall});
 \$app['config']->set('{$this->configKey}.api_token', env('{$envVarPrefix}_API_TOKEN'));
 PHP);
     }

@@ -272,7 +272,7 @@ class GenerateCommand extends Command
         bool $force,
         string $configKey,
         string $connectorName,
-        string $baseUrl,
+        ?string $baseUrl,
         string $namespace,
         bool $generateFoundation,
         bool $dryRun,
