@@ -6,7 +6,7 @@ it('{{ testDescription }}', function () {
     $request = (new {{ requestClass }}({{ nonFilterParams }}))
         {{ filterChain }}{{ includeChain }};
 
-    $response = $this->{{ clientName }}->send($request);
+    $dtoCollection = $this->{{ clientName }}->paginate($request)->dtoCollection();
 
     Saloon::assertSent(function ({{ requestClass }} $request) {
         $query = $request->query()->all();
@@ -14,9 +14,7 @@ it('{{ testDescription }}', function () {
         return true;
     });
 
-    expect($response->status())->toBe(200);
-
-    $dtoCollection = $response->dto();
+    expect($dtoCollection)->toHaveCount(2);
 
     expect($dtoCollection->first())
         {{ dtoAssertions }}{{ relationshipAssertions }};
