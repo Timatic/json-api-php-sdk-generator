@@ -3,6 +3,7 @@
 namespace Timatic\JsonApiSdk\Generators\TestGenerators\Traits;
 
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
+use Nette\PhpGenerator\Property;
 
 trait DtoAssertions
 {
@@ -43,10 +44,11 @@ trait DtoAssertions
         return implode("\n", $assertions);
     }
 
+
     /**
      * Get DTO properties from generated code
      *
-     * @return array<string, array{name: string, type: ?string}>
+     * @return array<string, \Nette\PhpGenerator\Property>
      */
     protected function getDtoPropertiesFromGeneratedCode(string $dtoClassName): array
     {
@@ -72,6 +74,7 @@ trait DtoAssertions
 
         // Extract properties from the class
         foreach ($classType->getProperties() as $property) {
+            
             // Skip static properties
             if ($property->isStatic()) {
                 continue;
@@ -91,18 +94,8 @@ trait DtoAssertions
             if ($hasRelationshipAttribute) {
                 continue;
             }
-
-            $type = $property->getType();
-            $typeName = null;
-
-            if ($type) {
-                $typeName = (string) $type;
-            }
-
-            $properties[$property->getName()] = [
-                'name' => $property->getName(),
-                'type' => $typeName,
-            ];
+            
+            $properties[$property->getName()] = $property;
         }
 
         return $properties;
@@ -121,15 +114,14 @@ trait DtoAssertions
 
         $attributes = [];
 
-        foreach ($properties as $propInfo) {
-            $propName = $propInfo['name'];
-
+        foreach ($properties as $property) {
+            
             // Skip ID and timestamps - these are typically read-only
-            if (in_array($propName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
+            if (in_array($property->getName(), ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
                 continue;
             }
 
-            $attributes[$propName] = $this->generateMockValueForDtoProperty($propName, $propInfo['type']);
+            $attributes[$property->getName()] = $this->generateMockValueForDtoProperty($property);
         }
 
         return $attributes;
@@ -138,10 +130,12 @@ trait DtoAssertions
     /**
      * Generate a mock value for a DTO property based on its type
      */
-    protected function generateMockValueForDtoProperty(string $propertyName, string $typeName): mixed
+    protected function generateMockValueForDtoProperty(Property $property): mixed
     {
+        $nullable = $property->isNullable();
+
         // Normalize type name (remove nullable prefix)
-        $typeName = ltrim($typeName, '?');
+        $typeName = $property->getType();
 
         // Handle union types (e.g., "string|null", "string|float", "int|null")
         if (str_contains($typeName, '|')) {
@@ -185,22 +179,26 @@ trait DtoAssertions
         }
 
         if ($typeName === 'mixed') {
-            return 'Mock value';
+            return 'Mixed value';
         }
 
         // String type - apply name-based heuristics
         if ($typeName === 'string') {
             // ID fields
-            if (str_ends_with($propertyName, 'Id')) {
+            if (str_ends_with($property->getName(), 'Id')) {
                 return 'mock-id-123';
             }
 
             // Email fields
-            if (str_contains($propertyName, 'email') || str_contains($propertyName, 'Email')) {
+            if (str_contains($property->getName(), 'email') || str_contains($property->getName(), 'Email')) {
                 return 'test@example.com';
             }
 
-            return 'Mock value';
+            return 'String value';
+        }
+
+        if($nullable){
+            return null;
         }
 
         // Fallback for unknown types

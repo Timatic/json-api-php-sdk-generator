@@ -158,8 +158,9 @@ class MutationRequestTestGenerator
 
         $filtered = [];
 
-        foreach ($properties as $propInfo) {
-            $propName = $propInfo['name'];
+        foreach ($properties as $property) {
+            $propName = $property->getName();
+            $propType = $property->getType();
 
             // Skip read-only/auto-managed fields
             if (in_array($propName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
@@ -167,11 +168,11 @@ class MutationRequestTestGenerator
             }
 
             // Check if this is a Carbon/DateTime field
-            $isDateTime = $propInfo['type'] && str_contains($propInfo['type'], 'Carbon');
+            $isDateTime = $propType && str_contains($propType, 'Carbon');
 
             $filtered[] = [
                 'name' => $propName,
-                'type' => $propInfo['type'],
+                'type' => $propType,
                 'isDateTime' => $isDateTime,
             ];
         }
