@@ -23,7 +23,7 @@ if (!$autoloaderFound) {
     exit(1);
 }
 
-use JsonApiSdk\Application;
+use Timatic\JsonApiSdk\Application;
 
 $app = new Application();
 $app->run();

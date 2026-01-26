@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Filtering;
+namespace Timatic\JsonApiSdk\Foundation\Filtering;
 
 enum Operator: string
 {

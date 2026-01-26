@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonApiSdk\Tests;
+namespace Timatic\JsonApiSdk\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 

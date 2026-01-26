@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Generators;
+namespace Timatic\JsonApiSdk\Generators;
 
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Generators\ConnectorGenerator;

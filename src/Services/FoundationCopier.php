@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Services;
+namespace Timatic\JsonApiSdk\Services;
 
 /**
  * Copies Foundation classes to the generated SDK output directory
@@ -79,21 +79,21 @@ class FoundationCopier
     {
         // Replace namespace declarations
         $content = str_replace(
-            'namespace JsonApiSdk\\Foundation',
+            'namespace Timatic\JsonApiSdk\\Foundation',
             "namespace {$targetNamespace}\\Foundation",
             $content
         );
 
         // Replace use statements
         $content = str_replace(
-            'use JsonApiSdk\\Foundation\\',
+            'use Timatic\JsonApiSdk\\Foundation\\',
             "use {$targetNamespace}\\Foundation\\",
             $content
         );
 
         // Replace fully qualified class names (with leading backslash)
         $content = str_replace(
-            '\\JsonApiSdk\\Foundation\\',
+            '\\Timatic\JsonApiSdk\\Foundation\\',
             "\\{$targetNamespace}\\Foundation\\",
             $content
         );

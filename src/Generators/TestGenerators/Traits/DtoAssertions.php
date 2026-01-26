@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonApiSdk\Generators\TestGenerators\Traits;
+namespace Timatic\JsonApiSdk\Generators\TestGenerators\Traits;
 
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
 

@@ -1,15 +1,15 @@
 <?php
 
-use JsonApiSdk\Generators\JsonApiDtoGenerator;
-use JsonApiSdk\Generators\JsonApiRequestGenerator;
-use JsonApiSdk\Generators\JsonApiConnectorGenerator;
-use JsonApiSdk\Generators\JsonApiResourceGenerator;
-use JsonApiSdk\Generators\JsonApiFactoryGenerator;
-use JsonApiSdk\Generators\JsonApiPestTestGenerator;
-use JsonApiSdk\Foundation\Hydration\Model;
-use JsonApiSdk\Foundation\Hydration\Hydrator;
-use JsonApiSdk\Foundation\Filtering\Operator;
-use JsonApiSdk\Foundation\Pagination\JsonApiPaginator;
+use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
+use Timatic\JsonApiSdk\Foundation\Hydration\Model;
+use Timatic\JsonApiSdk\Foundation\Hydration\Hydrator;
+use Timatic\JsonApiSdk\Foundation\Filtering\Operator;
+use Timatic\JsonApiSdk\Foundation\Pagination\JsonApiPaginator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
 
 test('generator classes can be instantiated', function () {

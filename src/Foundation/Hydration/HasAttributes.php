@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Hydration;
+namespace Timatic\JsonApiSdk\Foundation\Hydration;
 
 use ReflectionClass;
-use JsonApiSdk\Foundation\Hydration\Attributes\Property;
+use Timatic\JsonApiSdk\Foundation\Hydration\Attributes\Property;
 
 trait HasAttributes
 {

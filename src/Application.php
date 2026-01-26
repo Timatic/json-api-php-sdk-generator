@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk;
+namespace Timatic\JsonApiSdk;
 
-use JsonApiSdk\Commands\GenerateCommand;
+use Timatic\JsonApiSdk\Commands\GenerateCommand;
 use Symfony\Component\Console\Application as BaseApplication;
 
 class Application extends BaseApplication

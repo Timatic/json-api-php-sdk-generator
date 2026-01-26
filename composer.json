@@ -1,16 +1,16 @@
 {
-    "name": "jsonapi-sdk/generator",
+    "name": "timatic/jsonapi-sdk-generator",
     "description": "Generate PHP SDKs from OpenAPI specifications for JSON:API endpoints",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "JsonApiSdk\\": "src/"
+            "Timatic\\JsonApiSdk\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "JsonApiSdk\\Tests\\": "tests/"
+            "Timatic\\JsonApiSdk\\Tests\\": "tests/"
         }
     },
     "require": {

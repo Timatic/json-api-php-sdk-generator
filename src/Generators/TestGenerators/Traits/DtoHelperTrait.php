@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Generators\TestGenerators\Traits;
+namespace Timatic\JsonApiSdk\Generators\TestGenerators\Traits;
 
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;

@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonApiSdk\Generators;
+namespace Timatic\JsonApiSdk\Generators;
 
 class ConfigGenerator
 {

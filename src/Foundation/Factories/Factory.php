@@ -1,11 +1,11 @@
 <?php
 
-namespace JsonApiSdk\Foundation\Factories;
+namespace Timatic\JsonApiSdk\Foundation\Factories;
 
 use Faker\Factory as FakerFactory;
 use Faker\Generator;
 use Illuminate\Support\Collection;
-use JsonApiSdk\Foundation\Hydration\Model;
+use Timatic\JsonApiSdk\Foundation\Hydration\Model;
 
 abstract class Factory
 {

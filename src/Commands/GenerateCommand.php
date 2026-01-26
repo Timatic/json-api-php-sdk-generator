@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Commands;
+namespace Timatic\JsonApiSdk\Commands;
 
 use Crescat\SaloonSdkGenerator\CodeGenerator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
 use Crescat\SaloonSdkGenerator\Data\TaggedOutputFile;
 use Crescat\SaloonSdkGenerator\Parsers\OpenApiParser;
-use JsonApiSdk\Generators\JsonApiConnectorGenerator;
-use JsonApiSdk\Generators\JsonApiDtoGenerator;
-use JsonApiSdk\Generators\JsonApiFactoryGenerator;
-use JsonApiSdk\Generators\JsonApiPestTestGenerator;
-use JsonApiSdk\Generators\JsonApiRequestGenerator;
-use JsonApiSdk\Generators\JsonApiResourceGenerator;
-use JsonApiSdk\Generators\ServiceProviderGenerator;
-use JsonApiSdk\Generators\TestSetupGenerator;
-use JsonApiSdk\Generators\FoundationTestGenerator;
-use JsonApiSdk\Services\ConfigValuesService;
-use JsonApiSdk\Services\FoundationCopier;
-use JsonApiSdk\Services\ComposerSetup;
-use JsonApiSdk\Services\PintRunner;
-use JsonApiSdk\Generators\ConfigGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
+use Timatic\JsonApiSdk\Generators\ServiceProviderGenerator;
+use Timatic\JsonApiSdk\Generators\TestSetupGenerator;
+use Timatic\JsonApiSdk\Generators\FoundationTestGenerator;
+use Timatic\JsonApiSdk\Services\ConfigValuesService;
+use Timatic\JsonApiSdk\Services\FoundationCopier;
+use Timatic\JsonApiSdk\Services\ComposerSetup;
+use Timatic\JsonApiSdk\Services\PintRunner;
+use Timatic\JsonApiSdk\Generators\ConfigGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

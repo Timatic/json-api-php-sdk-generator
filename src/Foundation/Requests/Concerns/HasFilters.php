@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Requests\Concerns;
+namespace Timatic\JsonApiSdk\Foundation\Requests\Concerns;
 
-use JsonApiSdk\Foundation\Filtering\Operator;
+use Timatic\JsonApiSdk\Foundation\Filtering\Operator;
 
 trait HasFilters
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Hydration;
+namespace Timatic\JsonApiSdk\Foundation\Hydration;
 
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -11,9 +11,9 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
 use ReflectionProperty;
-use JsonApiSdk\Foundation\Hydration\Attributes\DateTime;
-use JsonApiSdk\Foundation\Hydration\Attributes\Property;
-use JsonApiSdk\Foundation\Hydration\Attributes\Relationship;
+use Timatic\JsonApiSdk\Foundation\Hydration\Attributes\DateTime;
+use Timatic\JsonApiSdk\Foundation\Hydration\Attributes\Property;
+use Timatic\JsonApiSdk\Foundation\Hydration\Attributes\Relationship;
 use Webmozart\Assert\Assert;
 
 use function is_null;

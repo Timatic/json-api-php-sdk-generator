@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Responses;
+namespace Timatic\JsonApiSdk\Foundation\Responses;
 
 use Saloon\Http\Response;
 

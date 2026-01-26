@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Requests\Concerns;
+namespace Timatic\JsonApiSdk\Foundation\Requests\Concerns;
 
 trait HasIncludes
 {

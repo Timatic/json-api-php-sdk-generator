@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Generators\TestGenerators;
+namespace Timatic\JsonApiSdk\Generators\TestGenerators;
 
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
-use JsonApiSdk\Generators\TestGenerators\Traits\DtoAssertions;
-use JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
-use JsonApiSdk\Generators\TestGenerators\Traits\ResourceTypeExtractorTrait;
-use JsonApiSdk\Generators\TestGenerators\Traits\TestDataGeneratorTrait;
+use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoAssertions;
+use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
+use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\ResourceTypeExtractorTrait;
+use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\TestDataGeneratorTrait;
 
 class MutationRequestTestGenerator
 {

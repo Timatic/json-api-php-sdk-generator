@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Services;
+namespace Timatic\JsonApiSdk\Services;
 
 class ConfigValuesService
 {

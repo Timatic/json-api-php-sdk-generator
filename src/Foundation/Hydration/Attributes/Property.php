@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Hydration\Attributes;
+namespace Timatic\JsonApiSdk\Foundation\Hydration\Attributes;
 
 use Attribute;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Generators\TestGenerators\Traits;
+namespace Timatic\JsonApiSdk\Generators\TestGenerators\Traits;
 
 use cebe\openapi\spec\Schema;
 use Illuminate\Support\Str;

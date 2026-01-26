@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Generators;
+namespace Timatic\JsonApiSdk\Generators;
 
 use cebe\openapi\spec\Reference;
 use cebe\openapi\spec\Schema;

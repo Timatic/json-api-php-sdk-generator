@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace JsonApiSdk\Foundation\Hydration\Facades;
+namespace Timatic\JsonApiSdk\Foundation\Hydration\Facades;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
-use JsonApiSdk\Foundation\Hydration\Model;
+use Timatic\JsonApiSdk\Foundation\Hydration\Model;
 
 /**
  * @method static Collection<int, Model> hydrateCollection(string $model, array<int, mixed> $data, array<int|string, mixed>|null $included = null)
@@ -16,6 +16,6 @@ class Hydrator extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return \JsonApiSdk\Foundation\Hydration\Hydrator::class;
+        return \Timatic\JsonApiSdk\Foundation\Hydration\Hydrator::class;
     }
 }
