@@ -219,7 +219,10 @@ class JsonApiPestTestGenerator extends PestTestGenerator
 
         // Check if this is a path parameter
         if (in_array($parameter, $endpoint->pathParameters, true)) {
-            return $name.'Id';
+            // Only append 'Id' if the parameter doesn't already end with 'Id' or 'ID'
+            if (!preg_match('/Id$/i', $name)) {
+                return $name.'Id';
+            }
         }
 
         return $name;

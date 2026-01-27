@@ -76,7 +76,10 @@ class JsonApiRequestGenerator extends RequestGenerator
     protected function getConstructorParameterName(string $originalName, bool $isPathParam = false): string
     {
         if ($isPathParam) {
-            return $originalName.'Id';
+            // Only append 'Id' if the parameter doesn't already end with 'Id' or 'ID'
+            if (!preg_match('/Id$/i', $originalName)) {
+                return $originalName.'Id';
+            }
         }
 
         return $originalName;
