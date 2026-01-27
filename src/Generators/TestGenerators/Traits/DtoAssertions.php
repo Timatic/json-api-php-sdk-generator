@@ -102,6 +102,18 @@ trait DtoAssertions
     }
 
     /**
+     * Get list of property names to skip when generating mock test data
+     * Override this method in child classes to customize which properties to skip
+     *
+     * @return string[]
+     */
+    protected function getPropertiesToSkipInTests(): array
+    {
+        // Skip ID and timestamps - these are typically read-only
+        return ['id', 'createdAt', 'updatedAt', 'deletedAt'];
+    }
+
+    /**
      * Generate mock attributes from DTO properties
      */
     protected function generateMockAttributesFromDto(string $dtoClassName): array
@@ -115,9 +127,9 @@ trait DtoAssertions
         $attributes = [];
 
         foreach ($properties as $property) {
-            
-            // Skip ID and timestamps - these are typically read-only
-            if (in_array($property->getName(), ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
+
+            // Skip properties that are typically read-only or handled separately
+            if (in_array($property->getName(), $this->getPropertiesToSkipInTests())) {
                 continue;
             }
 

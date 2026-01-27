@@ -73,8 +73,8 @@ class JsonApiDtoGenerator extends Generator
 
         // Add properties to the class
         foreach ($properties as $propertyName => $propertySpec) {
-            // Skip 'id' and 'type' as they're already defined in the base Model class
-            if (in_array($propertyName, ['id', 'type'])) {
+            // Skip properties already defined in base Model class
+            if (in_array($propertyName, $this->getPropertiesToSkip())) {
                 continue;
             }
 
@@ -114,6 +114,18 @@ class JsonApiDtoGenerator extends Generator
 
         // Fallback to regular properties if not JSON:API structure
         return $schema->properties ?? [];
+    }
+
+    /**
+     * Get list of property names to skip during DTO generation
+     * These properties are typically already defined in the base Model class
+     * Override this method in child classes to customize which properties to skip
+     *
+     * @return string[]
+     */
+    protected function getPropertiesToSkip(): array
+    {
+        return ['id', 'type'];
     }
 
     protected function addPropertyToClass(
