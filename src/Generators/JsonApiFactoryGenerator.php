@@ -90,6 +90,17 @@ class JsonApiFactoryGenerator implements PostProcessor
     }
 
     /**
+     * Get properties to skip when generating factory definitions.
+     * Override this method in subclasses to customize which properties are skipped.
+     *
+     * @return array<int, string>
+     */
+    protected function getPropertiesToSkip(): array
+    {
+        return ['id', 'type'];
+    }
+
+    /**
      * Get DTO properties using the PhpFile representation (no reflection)
      *
      * @return array<array{name: string, type: ?string, isDateTime: bool}>
@@ -97,14 +108,15 @@ class JsonApiFactoryGenerator implements PostProcessor
     protected function getDtoPropertiesFromPhpFile(PhpFile $dtoClass): array
     {
         $properties = [];
+        $propertiesToSkip = $this->getPropertiesToSkip();
 
         foreach ($dtoClass->getNamespaces() as $ns) {
             foreach ($ns->getClasses() as $class) {
                 foreach ($class->getProperties() as $property) {
                     $propName = $property->getName();
 
-                    // Skip 'id' and 'type' properties from Model base class
-                    if (in_array($propName, ['id', 'type'])) {
+                    // Skip properties defined in getPropertiesToSkip()
+                    if (in_array($propName, $propertiesToSkip)) {
                         continue;
                     }
 
