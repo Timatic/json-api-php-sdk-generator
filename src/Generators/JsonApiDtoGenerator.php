@@ -197,7 +197,9 @@ class JsonApiDtoGenerator extends Generator
     protected function convertOpenApiTypeToPhp(Schema|Reference $schema): string
     {
         if ($schema instanceof Reference) {
-            return Str::afterLast($schema->getReference(), '/');
+            $className = Str::afterLast($schema->getReference(), '/');
+            // Return fully qualified class name for DTOs in the same namespace
+            return "\\{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}\\{$className}";
         }
 
         // Handle anyOf, oneOf, allOf
