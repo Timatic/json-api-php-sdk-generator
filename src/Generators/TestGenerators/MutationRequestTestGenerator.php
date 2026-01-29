@@ -172,7 +172,11 @@ class MutationRequestTestGenerator
             if (in_array($propName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
                 continue;
             }
-
+            
+            if(!in_array($propType, ['string', 'int', 'float', 'bool', 'null'])){
+                continue;
+            }
+                
             // Check if this is a Carbon/DateTime field
             $isDateTime = $propType && str_contains($propType, 'Carbon');
 
