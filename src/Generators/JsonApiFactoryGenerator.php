@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Timatic\JsonApiSdk\Generators;
 
+use cebe\openapi\spec\Reference;
+use cebe\openapi\spec\Schema;
 use Crescat\SaloonSdkGenerator\Contracts\PostProcessor;
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
@@ -20,6 +22,9 @@ class JsonApiFactoryGenerator implements PostProcessor
 
     protected Config $config;
 
+    protected ApiSpecification $specification;
+    protected ?Schema $dtoSchema;
+
     /**
      * Get Foundation class with target namespace
      */
@@ -31,6 +36,7 @@ class JsonApiFactoryGenerator implements PostProcessor
     public function process(Config $config, ApiSpecification $specification, GeneratedCode $generatedCode,): PhpFile|array|null
     {
         $this->config = $config;
+        $this->specification = $specification;
 
         foreach($generatedCode->dtoClasses as $dtoClassName => $dtoClass) {
             $this->generateFactoryClass($dtoClassName, $dtoClass);
@@ -43,6 +49,8 @@ class JsonApiFactoryGenerator implements PostProcessor
     protected function generateFactoryClass(string $dtoClassName, PhpFile $dtoClass): PhpFile
     {
         $factoryName = $dtoClassName.'Factory';
+
+        $this->dtoSchema = $this->getSchemaForDto($dtoClassName);
 
         $classType = new ClassType($factoryName);
         $classFile = new PhpFile;
@@ -67,7 +75,7 @@ class JsonApiFactoryGenerator implements PostProcessor
             ->setReturnType('array')
             ->setProtected();
 
-        $definitionBody = $this->generateDefinitionBody($properties, $namespace);
+        $definitionBody = $this->generateDefinitionBody($dtoClassName, $properties, $namespace);
         $definitionMethod->setBody($definitionBody);
 
         // Add modelClass() method
@@ -98,6 +106,35 @@ class JsonApiFactoryGenerator implements PostProcessor
     protected function getPropertiesToSkip(): array
     {
         return ['id', 'type'];
+    }
+
+    /**
+     * Get the Schema object for a given DTO class name
+     */
+    protected function getSchemaForDto(string $dtoClassName): ?Schema
+    {
+        return $this->specification->components->schemas[$dtoClassName] ?? null;
+    }
+
+    /**
+     * Extract properties from JSON:API schema structure (same as DtoGenerator)
+     *
+     * @return array<string, Schema|Reference>
+     */
+    protected function extractDtoProperties(): array
+    {
+        if (!$this->dtoSchema) {
+            return [];
+        }
+
+        $attributesSchema = $this->dtoSchema->properties['attributes'];
+
+        if ($attributesSchema instanceof Schema && isset($attributesSchema->properties)) {
+            // Return properties from the attributes object
+            return $attributesSchema->properties;
+        }
+
+        return [];
     }
 
     /**
@@ -181,13 +218,22 @@ class JsonApiFactoryGenerator implements PostProcessor
     /**
      * Generate the body of the definition() method
      */
-    protected function generateDefinitionBody(array $properties, $namespace): string
+    protected function generateDefinitionBody(string $dtoClassName, array $properties, $namespace): string
     {
         $lines = ['return ['];
 
         foreach ($properties as $property) {
             $propertyName = $property['name'];
-            $fakerCall = $this->generateFakerCall($propertyName, $property['type'], $property['isDateTime']);
+
+            // Check if this property is a Reference in the schema
+            $referencedDtoClass = $this->getReferencedDtoClass($propertyName);
+
+            $fakerCall = $this->generateFakerCall(
+                $propertyName,
+                $property['type'],
+                $property['isDateTime'],
+                $referencedDtoClass
+            );
 
             $lines[] = "    '{$propertyName}' => {$fakerCall},";
         }
@@ -206,13 +252,18 @@ class JsonApiFactoryGenerator implements PostProcessor
     /**
      * Generate appropriate Faker call for a property
      */
-    protected function generateFakerCall(string $propertyName, ?string $propertyType, bool $isDateTime): string
+    protected function generateFakerCall(string $propertyName, ?string $propertyType, bool $isDateTime, ?string $referencedDtoClass = null): string
     {
         $lowerName = strtolower($propertyName);
 
         // Handle DateTime properties
         if ($isDateTime || $propertyType === 'Carbon\\Carbon') {
             return 'Carbon::now()->subDays($this->faker->numberBetween(0, 365))';
+        }
+
+        // Handle nested DTO properties (from OpenAPI $ref)
+        if ($referencedDtoClass !== null) {
+            return "{$referencedDtoClass}Factory::new()->make()";
         }
 
         // Handle by property type FIRST (type takes precedence over naming)
@@ -287,5 +338,26 @@ class JsonApiFactoryGenerator implements PostProcessor
 
         // Default to word for strings
         return '$this->faker->word()';
+    }
+
+    /**
+     * @param Schema|Reference|null $schemaProperty
+     * @return string|null
+     */
+    public function getReferencedDtoClass(string $propertyName): ?string
+    {
+        // Get the schema for this DTO to check for References
+        $schemaProperties = $this->extractDtoProperties();
+
+        $schemaProperty = $schemaProperties[$propertyName] ?? null;
+        $referencedDtoClass = null;
+
+        if ($schemaProperty instanceof Reference) {
+            // Extract the DTO class name from the reference
+            $referencedDtoClass = \Illuminate\Support\Str::afterLast($schemaProperty->getReference(), '/');
+            $referencedDtoClass = ucfirst($referencedDtoClass);
+        }
+
+        return $referencedDtoClass;
     }
 }
