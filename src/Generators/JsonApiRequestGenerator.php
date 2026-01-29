@@ -71,21 +71,6 @@ class JsonApiRequestGenerator extends RequestGenerator
     }
 
     /**
-     * Hook: Transform path parameter names (e.g., budget -> budgetId)
-     */
-    protected function getConstructorParameterName(string $originalName, bool $isPathParam = false): string
-    {
-        if ($isPathParam) {
-            // Only append 'Id' if the parameter doesn't already end with 'Id' or 'ID'
-            if (!preg_match('/Id$/i', $originalName)) {
-                return $originalName.'Id';
-            }
-        }
-
-        return $originalName;
-    }
-
-    /**
      * Hook: Customize request class for collection requests
      */
     protected function customizeRequestClass(ClassType $classType, $namespace, Endpoint $endpoint): void

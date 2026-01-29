@@ -211,24 +211,6 @@ class JsonApiPestTestGenerator extends PestTestGenerator
     }
 
     /**
-     * Hook: Transform path parameter names (e.g., budget -> budgetId)
-     */
-    protected function getTestParameterName(Parameter $parameter, Endpoint $endpoint): string
-    {
-        $name = parent::getTestParameterName($parameter, $endpoint);
-
-        // Check if this is a path parameter
-        if (in_array($parameter, $endpoint->pathParameters, true)) {
-            // Only append 'Id' if the parameter doesn't already end with 'Id' or 'ID'
-            if (!preg_match('/Id$/i', $name)) {
-                return $name.'Id';
-            }
-        }
-
-        return $name;
-    }
-
-    /**
      * Hook: Replace additional stub variables
      */
     protected function replaceAdditionalStubVariables(

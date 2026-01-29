@@ -79,12 +79,6 @@ class MutationRequestTestGenerator
         // Add path parameters first (e.g., budgetId for PATCH)
         foreach ($endpoint->pathParameters as $param) {
             $paramName = NameHelper::safeVariableName($param->name);
-            // Add 'Id' suffix if not already present (case-insensitive check for 'Id' or 'ID')
-            if (! preg_match('/Id$/i', $paramName)) {
-                $paramName .= 'Id';
-            }
-
-            // Generate typed value based on parameter type
             $value = $this->generateValue($paramName, $param->type);
             $formattedValue = $this->formatAsCode($value);
             $args[] = "{$paramName}: {$formattedValue}";
