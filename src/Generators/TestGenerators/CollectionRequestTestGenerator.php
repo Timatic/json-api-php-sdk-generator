@@ -305,11 +305,11 @@ class CollectionRequestTestGenerator
                     'array' => '[]',
                     default => 'null',
                 };
-                $params[] = "{$paramName}: {$value}";
+                $params[$paramName] = "{$paramName}: {$value}";
             }
         }
 
-        return implode(', ', $params);
+        return implode(', ', array_values($params));
     }
 
     /**
