@@ -10,6 +10,9 @@ use ReflectionClass;
 use Timatic\JsonApiSdk\Foundation\Hydration\Attributes\Property;
 use Timatic\JsonApiSdk\Foundation\Hydration\Attributes\Relationship;
 
+/**
+ * @template TFactory of \Pionect\VismaSdk\Foundation\Factories\Factory
+ */
 abstract class Model implements ModelInterface
 {
     use HasAttributes;
@@ -21,6 +24,8 @@ abstract class Model implements ModelInterface
 
     /**
      * Get a new factory instance for the model.
+     *
+     * @return TFactory
      */
     public static function factory(): mixed
     {

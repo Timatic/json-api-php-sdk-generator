@@ -68,6 +68,13 @@ class JsonApiDtoGenerator extends Generator
             ->addComment('')
             ->addComment(Utils::wrapLongLines($schema->description ?? ''));
 
+        $modelName = NameHelper::dtoClassName($className);
+        $factoryClass = $this->config->namespace.'\\Factories\\'.$modelName.'Factory';
+        $modelClass = $this->foundationClass('Hydration\\Model');
+
+        $classType->addComment("@extends \\{$modelClass}<\\{$factoryClass}>");
+        $classType->addComment("@method static \\{$factoryClass} factory()");
+
         // Extract properties from JSON:API structure
         $properties = $this->extractJsonApiProperties($schema);
 
