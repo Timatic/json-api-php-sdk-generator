@@ -13,6 +13,7 @@ use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
 use Crescat\SaloonSdkGenerator\Data\TaggedOutputFile;
 use Crescat\SaloonSdkGenerator\Generator;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
+use Illuminate\Support\Str;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\PhpFile;
 
@@ -23,7 +24,6 @@ class JsonApiFactoryGenerator implements PostProcessor
     protected Config $config;
 
     protected ApiSpecification $specification;
-    protected ?Schema $dtoSchema;
 
     /**
      * Get Foundation class with target namespace
@@ -49,8 +49,6 @@ class JsonApiFactoryGenerator implements PostProcessor
     protected function generateFactoryClass(string $dtoClassName, PhpFile $dtoClass): PhpFile
     {
         $factoryName = $dtoClassName.'Factory';
-
-        $this->dtoSchema = $this->getSchemaForDto($dtoClassName);
 
         $classType = new ClassType($factoryName);
         $classFile = new PhpFile;
@@ -106,14 +104,6 @@ class JsonApiFactoryGenerator implements PostProcessor
     protected function getPropertiesToSkip(): array
     {
         return ['id', 'type'];
-    }
-
-    /**
-     * Get the Schema object for a given DTO class name
-     */
-    protected function getSchemaForDto(string $dtoClassName): ?Schema
-    {
-        return $this->specification->components->schemas[$dtoClassName] ?? null;
     }
 
     /**
@@ -226,7 +216,7 @@ class JsonApiFactoryGenerator implements PostProcessor
             $propertyName = $property['name'];
 
             // Check if this property is a Reference in the schema
-            $referencedDtoClass = $this->getReferencedDtoClass($propertyName);
+            $referencedDtoClass = $this->getReferencedDtoClass($property['type']);
 
             $fakerCall = $this->generateFakerCall(
                 $propertyName,
@@ -348,20 +338,14 @@ class JsonApiFactoryGenerator implements PostProcessor
      * @param Schema|Reference|null $schemaProperty
      * @return string|null
      */
-    public function getReferencedDtoClass(string $propertyName): ?string
+    public function getReferencedDtoClass(string $propertyType): ?string
     {
-        // Get the schema for this DTO to check for References
-        $schemaProperties = $this->extractDtoProperties();
+        $className = Str::afterLast($propertyType, '\\');
 
-        $schemaProperty = $schemaProperties[$propertyName] ?? null;
-        $referencedDtoClass = null;
+        if(array_key_exists($className, $this->specification->components->schemas)){
+            return ucfirst($className);
+        };
 
-        if ($schemaProperty instanceof Reference) {
-            // Extract the DTO class name from the reference
-            $referencedDtoClass = \Illuminate\Support\Str::afterLast($schemaProperty->getReference(), '/');
-            $referencedDtoClass = ucfirst($referencedDtoClass);
-        }
-
-        return $referencedDtoClass;
+        return null;
     }
 }
