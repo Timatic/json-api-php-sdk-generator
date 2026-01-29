@@ -336,8 +336,12 @@ class JsonApiFactoryGenerator implements PostProcessor
             return '$this->faker->word()';
         }
 
+        if($propertyType == 'string'){
+            return '$this->faker->word()';
+        }
+
         // Default to word for strings
-        return '$this->faker->word()';
+        return 'null';
     }
 
     /**
