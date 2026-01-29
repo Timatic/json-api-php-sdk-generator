@@ -84,8 +84,20 @@ class MutationRequestTestGenerator
             $args[] = "{$paramName}: {$formattedValue}";
         }
 
-        // Add $dto parameter last - use named argument if there are path params
-        if (empty($endpoint->pathParameters)) {
+        // Add required query parameters next (non-nullable)
+        foreach ($endpoint->queryParameters as $param) {
+            if ($param->nullable) {
+                continue;
+            }
+
+            $paramName = NameHelper::safeVariableName($param->name);
+            $value = $this->generateValue($paramName, $param->type);
+            $formattedValue = $this->formatAsCode($value);
+            $args[] = "{$paramName}: {$formattedValue}";
+        }
+
+        // Add $dto parameter last - use named argument if there are path params or query params
+        if (empty($endpoint->pathParameters) && empty($endpoint->queryParameters)) {
             $args[] = '$dto';
         } else {
             $args[] = 'data: $dto';
