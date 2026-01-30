@@ -16,7 +16,7 @@
     "require": {
         "php": "^8.2",
         "symfony/console": "^7.0",
-        "crescat-io/saloon-sdk-generator": "dev-add-hooks-to-pest-generator",
+        "timatic/saloon-sdk-generator": "dev-main",
         "saloonphp/pagination-plugin": "^2.0",
         "webmozart/assert": "^1.11"
     },
@@ -25,12 +25,7 @@
         "fakerphp/faker": "^1.23",
         "phpstan/phpstan": "^2.1"
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/tomasvanrijsse/saloon-sdk-generator"
-        }
-    ],
+
     "bin": ["bin/jsonapi-sdk"],
     "minimum-stability": "dev",
     "prefer-stable": true,
