@@ -116,10 +116,22 @@ class JsonApiRequestGenerator extends RequestGenerator
         }
 
         $modelClass = $this->foundationClass('Hydration\\Model');
-        $namespace->addUse($modelClass);
+
+        // Get specific DTO type from requestBody schema
+        $dtoType = $this->getRequestBodyDtoType($endpoint, $modelClass);
+
+        if ($dtoType !== $modelClass) {
+            // Specific DTO found
+            $namespace->addUse($dtoType);
+            $typeHint = '\\' . $dtoType . '|array|null';
+        } else {
+            // Fallback to generic Model
+            $namespace->addUse($modelClass);
+            $typeHint = '\\' . $modelClass . '|array|null';
+        }
 
         $dataParam = new Parameter(
-            type: '\\' . $modelClass . '|array|null',
+            type: $typeHint,
             nullable: true,
             name: 'data',
             description: 'Request data',
@@ -302,5 +314,28 @@ class JsonApiRequestGenerator extends RequestGenerator
                     ->addBody("return \$this->addInclude('{$relationName}');");
             }
         }
+    }
+
+    /**
+     * Get the specific DTO type for request body, or fallback to Model
+     */
+    protected function getRequestBodyDtoType(Endpoint $endpoint, string $fallbackModelClass): string
+    {
+        // Check if endpoint has requestBody schema reference
+        if (! $endpoint->requestBodySchema) {
+            return $fallbackModelClass;
+        }
+
+        $schemaName = $endpoint->requestBodySchema;
+
+        // Validate that the schema exists in components
+        if (! isset($this->specification->components->schemas[$schemaName])) {
+            return $fallbackModelClass;
+        }
+
+        // Build DTO class name
+        $dtoClass = $this->config->namespace . '\\Dto\\' . $schemaName;
+
+        return $dtoClass;
     }
 }
