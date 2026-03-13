@@ -7,6 +7,7 @@ namespace Timatic\JsonApiSdk\Generators\TestGenerators;
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
+use Crescat\SaloonSdkGenerator\Helpers\DtoResolver;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoAssertions;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\MockJsonDataTrait;
@@ -27,19 +28,19 @@ class SingularGetRequestTestGenerator
 
     protected string $namespace;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
-    {
+    public function __construct(
+        ApiSpecification $specification,
+        GeneratedCode $generatedCode,
+        string $namespace,
+        DtoResolver $dtoResolver,
+    ) {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
         $this->namespace = $namespace;
     }
 
-    /**
-     * Check if endpoint is a singular GET request (GET with path parameters)
-     */
-    public function isSingularGetRequest(Endpoint $endpoint): bool
+    public function isApplicable(Endpoint $endpoint): bool
     {
-        // GET requests WITH path parameters are singular GET requests
         return $endpoint->method->isGet() && ! empty($endpoint->pathParameters);
     }
 

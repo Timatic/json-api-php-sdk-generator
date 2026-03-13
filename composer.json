@@ -3,6 +3,12 @@
     "description": "Generate PHP SDKs from OpenAPI specifications for JSON:API endpoints",
     "type": "library",
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../saloon-sdk-generator"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "Timatic\\JsonApiSdk\\": "src/"

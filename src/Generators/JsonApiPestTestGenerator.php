@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Timatic\JsonApiSdk\Generators;
 
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
-use Crescat\SaloonSdkGenerator\Data\Generator\Config;
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
 use Crescat\SaloonSdkGenerator\Generators\PestTestGenerator;
+use Crescat\SaloonSdkGenerator\Helpers\DtoResolver;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
-use Nette\PhpGenerator\PhpFile;
 use Timatic\JsonApiSdk\Generators\TestGenerators\CollectionRequestTestGenerator;
 use Timatic\JsonApiSdk\Generators\TestGenerators\DeleteRequestTestGenerator;
 use Timatic\JsonApiSdk\Generators\TestGenerators\MutationRequestTestGenerator;
@@ -21,20 +20,16 @@ class JsonApiPestTestGenerator extends PestTestGenerator
 {
     use DtoHelperTrait;
 
-    public function process(
-        Config $config,
+    protected function initializeTestGenerators(
         ApiSpecification $specification,
         GeneratedCode $generatedCode,
-    ): PhpFile|array|null {
-        $this->generatedCode = $generatedCode;
-
-        $namespace = $config->namespace;
-        $this->collectionTestGenerator = new CollectionRequestTestGenerator($specification, $generatedCode, $namespace);
-        $this->mutationTestGenerator = new MutationRequestTestGenerator($specification, $generatedCode, $namespace);
-        $this->singularGetTestGenerator = new SingularGetRequestTestGenerator($specification, $generatedCode, $namespace);
-        $this->deleteTestGenerator = new DeleteRequestTestGenerator($specification, $generatedCode, $namespace);
-
-        return parent::process($config, $specification, $generatedCode);
+        string $namespace,
+        DtoResolver $dtoResolver,
+    ): void {
+        $this->collectionTestGenerator = new CollectionRequestTestGenerator($specification, $generatedCode, $namespace, $dtoResolver);
+        $this->mutationTestGenerator = new MutationRequestTestGenerator($specification, $generatedCode, $namespace, $dtoResolver);
+        $this->singularGetTestGenerator = new SingularGetRequestTestGenerator($specification, $generatedCode, $namespace, $dtoResolver);
+        $this->deleteTestGenerator = new DeleteRequestTestGenerator($specification, $generatedCode, $namespace, $dtoResolver);
     }
 
     protected function shouldIncludeEndpoint(Endpoint $endpoint): bool
@@ -62,9 +57,9 @@ class JsonApiPestTestGenerator extends PestTestGenerator
     protected function hasValidDtoProperties(Endpoint $endpoint): bool
     {
         try {
-            if ($this->collectionTestGenerator->isCollectionRequest($endpoint)) {
+            if ($this->collectionTestGenerator->isApplicable($endpoint)) {
                 $this->collectionTestGenerator->generateMockData($endpoint);
-            } elseif ($this->singularGetTestGenerator->isSingularGetRequest($endpoint)) {
+            } elseif ($this->singularGetTestGenerator->isApplicable($endpoint)) {
                 $this->singularGetTestGenerator->generateMockData($endpoint);
             }
 
@@ -89,27 +84,6 @@ class JsonApiPestTestGenerator extends PestTestGenerator
     protected function getTestStubPath(): string
     {
         return __DIR__.'/TestGenerators/stubs/pest-resource-test.stub';
-    }
-
-    protected function getTestFunctionStubPath(Endpoint $endpoint): string
-    {
-        if ($this->collectionTestGenerator->isCollectionRequest($endpoint)) {
-            return $this->collectionTestGenerator->getStubPath();
-        }
-
-        if ($this->mutationTestGenerator->isMutationRequest($endpoint)) {
-            return $this->mutationTestGenerator->getStubPath();
-        }
-
-        if ($this->singularGetTestGenerator->isSingularGetRequest($endpoint)) {
-            return $this->singularGetTestGenerator->getStubPath();
-        }
-
-        if ($this->deleteTestGenerator->isDeleteRequest($endpoint)) {
-            return $this->deleteTestGenerator->getStubPath();
-        }
-
-        throw new \RuntimeException('Unmatched request type');
     }
 
     protected function getRequestClassName(Endpoint $endpoint): string
@@ -142,30 +116,5 @@ class JsonApiPestTestGenerator extends PestTestGenerator
     protected function getTestPath(string $resourceName): string
     {
         return "tests/Requests/{$resourceName}Test.php";
-    }
-
-    protected function replaceAdditionalStubVariables(
-        string $functionStub,
-        Endpoint $endpoint,
-        string $resourceName,
-        string $requestClassName,
-    ): string {
-        if ($this->collectionTestGenerator->isCollectionRequest($endpoint)) {
-            return $this->collectionTestGenerator->replaceStubVariables($functionStub, $endpoint);
-        }
-
-        if ($this->mutationTestGenerator->isMutationRequest($endpoint)) {
-            return $this->mutationTestGenerator->replaceStubVariables($functionStub, $endpoint);
-        }
-
-        if ($this->singularGetTestGenerator->isSingularGetRequest($endpoint)) {
-            return $this->singularGetTestGenerator->replaceStubVariables($functionStub, $endpoint);
-        }
-
-        if ($this->deleteTestGenerator->isDeleteRequest($endpoint)) {
-            return $this->deleteTestGenerator->replaceStubVariables($functionStub, $endpoint);
-        }
-
-        throw new \RuntimeException('Unmatched request type');
     }
 }

@@ -19,7 +19,7 @@ use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
 use Timatic\JsonApiSdk\Services\ComposerSetup;
-use Timatic\JsonApiSdk\Services\ConfigValuesService;
+use Crescat\SaloonSdkGenerator\Services\ConfigValuesService;
 use Timatic\JsonApiSdk\Services\FoundationCopier;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -134,19 +134,26 @@ class GenerateCommand extends Command
             return Command::FAILURE;
         }
 
-        // Determine config key, base URL, and connector name
-        $configValuesService = new ConfigValuesService();
-        $configValues = $configValuesService->resolve($outputDir, $connectorNameOption, $baseUrlOption, $generateFoundation);
+        if ($generateFoundation) {
+            $connectorName = $connectorNameOption;
+            $baseUrl = $baseUrlOption;
+        } else {
+            $configValues = (new ConfigValuesService)->resolveFromExisting(
+                $outputDir,
+                connectorName: $connectorNameOption,
+                baseUrl: $baseUrlOption,
+            );
 
-        if ($configValues === null) {
-            $this->io->error('No existing SDK found in output directory. Use --foundation to generate a new SDK.');
-            return Command::FAILURE;
+            if ($configValues === null) {
+                $this->io->error('No existing SDK found in output directory. Use --foundation to generate a new SDK.');
+                return Command::FAILURE;
+            }
+
+            $connectorName = $configValues['connectorName'];
+            $baseUrl = $configValues['baseUrl'];
         }
 
-        $configKey = $configValues['configKey'];
-        $baseUrl = $configValues['baseUrl'];
-        // Use connector name from config (derived from config key) when --foundation is used
-        $connectorName = $configValues['connectorName'];
+        $configKey = Config::deriveConfigKey($connectorName);
 
         $this->io->title('JSON:API SDK Generator');
 

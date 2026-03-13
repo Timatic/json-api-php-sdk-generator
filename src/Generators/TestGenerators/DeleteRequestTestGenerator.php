@@ -7,6 +7,7 @@ namespace Timatic\JsonApiSdk\Generators\TestGenerators;
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
+use Crescat\SaloonSdkGenerator\Helpers\DtoResolver;
 
 class DeleteRequestTestGenerator
 {
@@ -16,17 +17,18 @@ class DeleteRequestTestGenerator
 
     protected string $namespace;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
-    {
+    public function __construct(
+        ApiSpecification $specification,
+        GeneratedCode $generatedCode,
+        string $namespace,
+        DtoResolver $dtoResolver,
+    ) {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
         $this->namespace = $namespace;
     }
 
-    /**
-     * Check if endpoint is a DELETE request
-     */
-    public function isDeleteRequest(Endpoint $endpoint): bool
+    public function isApplicable(Endpoint $endpoint): bool
     {
         return $endpoint->method->isDelete();
     }

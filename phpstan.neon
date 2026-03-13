@@ -6,4 +6,8 @@ parameters:
         - vendor
     treatPhpDocTypesAsCertain: false
     ignoreErrors:
-        - '#Trait .* is used zero times#'
+        -
+            identifier: trait.unused
+        -
+            identifier: constructor.unusedParameter
+            path: src/Generators/TestGenerators/*

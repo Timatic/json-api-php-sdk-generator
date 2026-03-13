@@ -7,6 +7,7 @@ namespace Timatic\JsonApiSdk\Generators\TestGenerators;
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
+use Crescat\SaloonSdkGenerator\Helpers\DtoResolver;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoAssertions;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
@@ -26,17 +27,18 @@ class MutationRequestTestGenerator
 
     protected string $namespace;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
-    {
+    public function __construct(
+        ApiSpecification $specification,
+        GeneratedCode $generatedCode,
+        string $namespace,
+        DtoResolver $dtoResolver,
+    ) {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
         $this->namespace = $namespace;
     }
 
-    /**
-     * Check if endpoint is a mutation request (POST or PATCH)
-     */
-    public function isMutationRequest(Endpoint $endpoint): bool
+    public function isApplicable(Endpoint $endpoint): bool
     {
         return $endpoint->method->isPost() || $endpoint->method->isPatch();
     }

@@ -7,7 +7,9 @@ namespace Timatic\JsonApiSdk\Generators\TestGenerators;
 use Crescat\SaloonSdkGenerator\Data\Generator\ApiSpecification;
 use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\GeneratedCode;
+use Crescat\SaloonSdkGenerator\Helpers\DtoResolver;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
+use Illuminate\Support\Str;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoAssertions;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
 use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\MockJsonDataTrait;
@@ -28,42 +30,34 @@ class CollectionRequestTestGenerator
 
     protected string $namespace;
 
-    public function __construct(ApiSpecification $specification, GeneratedCode $generatedCode, string $namespace)
-    {
+    public function __construct(
+        ApiSpecification $specification,
+        GeneratedCode $generatedCode,
+        string $namespace,
+        DtoResolver $dtoResolver,
+    ) {
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
         $this->namespace = $namespace;
     }
 
-    /**
-     * Check if endpoint is a GET collection request (implements Paginatable)
-     */
-    public function isCollectionRequest(Endpoint $endpoint): bool
+    public function isApplicable(Endpoint $endpoint): bool
     {
-        // GET requests without path parameters are collection requests
         return $endpoint->method->isGet() && empty($endpoint->pathParameters);
     }
 
-    /**
-     * Get the stub path for collection request tests
-     */
     public function getStubPath(): string
     {
         return __DIR__.'/stubs/pest-collection-request-test-func.stub';
     }
 
-    /**
-     * Replace stub variables with collection-specific content
-     */
     public function replaceStubVariables(string $functionStub, Endpoint $endpoint): string
     {
         $filterData = $this->generateFilterChainWithData($endpoint);
         $functionStub = str_replace('{{ filterChain }}', $filterData['chain'], $functionStub);
 
-        // Only include filter assertions block if there are filters
         if (! empty($filterData['assertions'])) {
-            $filterAssertionBlock = $this->generateFilterAssertionBlock($filterData['assertions']);
-            $functionStub = str_replace('{{ filterAssertionBlock }}', $filterAssertionBlock."\n\t\t", $functionStub);
+            $functionStub = str_replace('{{ filterAssertionBlock }}', $filterData['assertions']."\n\t\t", $functionStub);
         } else {
             $functionStub = str_replace('{{ filterAssertionBlock }}', '', $functionStub);
         }
@@ -105,8 +99,6 @@ class CollectionRequestTestGenerator
             $functionStub
         );
 
-        // Generate DTO assertions based on mock data
-        $mockData = $this->generateMockData($endpoint);
         $dtoAssertions = $this->generateDtoAssertions($mockData);
 
         // If no valid assertions (comments only), remove the DTO validation block entirely
@@ -121,15 +113,9 @@ class CollectionRequestTestGenerator
         return $functionStub;
     }
 
-    /**
-     * Generate mock data for collection response
-     */
     public function generateMockData(Endpoint $endpoint): array
     {
-        // Get DTO class name from endpoint
         $dtoClassName = $this->getDtoClassName($endpoint);
-
-        // Generate mock data based on DTO - must have properties
         $attributes = $this->generateMockAttributesFromDto($dtoClassName);
         if (empty($attributes) || $attributes === ['name' => 'Mock value']) {
             throw new \RuntimeException("DTO '{$dtoClassName}' has no properties - skipping test generation");
@@ -137,7 +123,6 @@ class CollectionRequestTestGenerator
 
         $resourceType = $this->getResourceTypeFromEndpoint($endpoint);
 
-        // Get relationships for this endpoint
         $relationships = $this->getRelationshipsFromSchema($dtoClassName);
         $includeData = $this->generateIncludeChainWithData($endpoint);
         $hasIncludes = ! empty($includeData['chain']);
@@ -157,7 +142,6 @@ class CollectionRequestTestGenerator
             ],
         ];
 
-        // Add relationships and included data if this endpoint has includes
         if ($hasIncludes && ! empty($relationships)) {
             $included = [];
             $relationshipsData = [];
@@ -170,10 +154,10 @@ class CollectionRequestTestGenerator
                     continue;
                 }
 
-                $relationType = strtolower(\Illuminate\Support\Str::plural($relatedModel));
+                $relationType = strtolower(Str::plural($relatedModel));
 
                 // Check if this is a "Many" relationship
-                $isMany = \Illuminate\Support\Str::plural($relationName) === $relationName;
+                $isMany = Str::plural($relationName) === $relationName;
 
                 if ($isMany) {
                     // For "Many" relationships, data should be an array of objects
@@ -206,15 +190,6 @@ class CollectionRequestTestGenerator
         }
 
         return $data;
-    }
-
-    /**
-     * Generate the complete filter assertion block
-     */
-    protected function generateFilterAssertionBlock(string $assertions): string
-    {
-        // Just return the assertions with proper indentation, no wrapper needed
-        return $assertions;
     }
 
     /**
@@ -384,7 +359,7 @@ class CollectionRequestTestGenerator
         // Generate include method calls
         $includeCalls = [];
         foreach ($testRelationships as $relationName) {
-            $methodName = 'include'.\Illuminate\Support\Str::studly($relationName);
+            $methodName = 'include'.Str::studly($relationName);
             $includeCalls[] = "->{$methodName}()";
         }
 
@@ -410,7 +385,7 @@ class CollectionRequestTestGenerator
     protected function detectRelatedModel(string $relationName): string
     {
         // Convert to singular studly case (e.g., budgetType -> BudgetType, entries -> Entry)
-        return \Illuminate\Support\Str::studly(\Illuminate\Support\Str::singular($relationName));
+        return Str::studly(Str::singular($relationName));
     }
 
     /**
@@ -422,7 +397,7 @@ class CollectionRequestTestGenerator
 
         foreach ($relationships as $relationName) {
             $relatedModel = $this->detectRelatedModel($relationName);
-            $propertyName = \Illuminate\Support\Str::camel($relationName);
+            $propertyName = Str::camel($relationName);
 
             // Skip if the related model doesn't exist in the schema
             if (! isset($this->specification->components->schemas[$relatedModel])) {
@@ -430,7 +405,7 @@ class CollectionRequestTestGenerator
             }
 
             // Check if this is likely a "Many" relationship (plural name)
-            $isMany = \Illuminate\Support\Str::plural($relationName) === $relationName;
+            $isMany = Str::plural($relationName) === $relationName;
 
             if ($isMany) {
                 // For collection relationships, verify it's not null
