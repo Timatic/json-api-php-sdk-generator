@@ -23,7 +23,7 @@ test('generator classes can be instantiated', function () {
     expect(new JsonApiConnectorGenerator($config))->toBeInstanceOf(JsonApiConnectorGenerator::class);
     expect(new JsonApiResourceGenerator($config))->toBeInstanceOf(JsonApiResourceGenerator::class);
     expect(new JsonApiFactoryGenerator($config))->toBeInstanceOf(JsonApiFactoryGenerator::class);
-    expect(new JsonApiPestTestGenerator($config))->toBeInstanceOf(JsonApiPestTestGenerator::class);
+    expect(new JsonApiPestTestGenerator())->toBeInstanceOf(JsonApiPestTestGenerator::class);
 });
 
 test('foundation classes exist', function () {

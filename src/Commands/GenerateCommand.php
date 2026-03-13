@@ -8,20 +8,19 @@ use Crescat\SaloonSdkGenerator\CodeGenerator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
 use Crescat\SaloonSdkGenerator\Data\TaggedOutputFile;
 use Crescat\SaloonSdkGenerator\Parsers\OpenApiParser;
+use Crescat\SaloonSdkGenerator\Generators\ConfigPostProcessor;
+use Crescat\SaloonSdkGenerator\Generators\ServiceProviderPostProcessor;
+use Crescat\SaloonSdkGenerator\Generators\TestSetupPostProcessor;
+use Crescat\SaloonSdkGenerator\Services\PintRunner;
 use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
-use Timatic\JsonApiSdk\Generators\ServiceProviderGenerator;
-use Timatic\JsonApiSdk\Generators\TestSetupGenerator;
-use Timatic\JsonApiSdk\Generators\FoundationTestGenerator;
+use Timatic\JsonApiSdk\Services\ComposerSetup;
 use Timatic\JsonApiSdk\Services\ConfigValuesService;
 use Timatic\JsonApiSdk\Services\FoundationCopier;
-use Timatic\JsonApiSdk\Services\ComposerSetup;
-use Timatic\JsonApiSdk\Services\PintRunner;
-use Timatic\JsonApiSdk\Generators\ConfigGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -170,7 +169,6 @@ class GenerateCommand extends Command
             "Exclude PUT: " . ($excludePut ? 'Yes' : 'No'),
         ]);
 
-        // Create config
         $config = new Config(
             connectorName: $connectorName,
             namespace: $namespace,
@@ -180,6 +178,8 @@ class GenerateCommand extends Command
             extra: [
                 'excludePut' => $excludePut,
             ],
+            configKey: $configKey,
+            baseUrl: $baseUrl,
         );
 
         // Parse specification
@@ -195,12 +195,17 @@ class GenerateCommand extends Command
             return Command::FAILURE;
         }
 
-        // Configure post-processors
         $postProcessors = [];
 
         if ($generateTests) {
-            $postProcessors[] = new JsonApiPestTestGenerator();
+            $postProcessors[] = new JsonApiPestTestGenerator(generateTestSetup: false);
             $postProcessors[] = new JsonApiFactoryGenerator();
+        }
+
+        if ($generateFoundation) {
+            $postProcessors[] = new ConfigPostProcessor();
+            $postProcessors[] = new ServiceProviderPostProcessor();
+            $postProcessors[] = new TestSetupPostProcessor();
         }
 
         // Generate code
@@ -229,10 +234,10 @@ class GenerateCommand extends Command
             $this->listGeneratedFiles($this->io, $result, $outputDir, $configKey);
         } else {
             $this->io->section('Writing Files');
-            $this->writeGeneratedFiles($this->io, $result, $outputDir, $force, $configKey, $connectorName, $baseUrl, $namespace, $generateFoundation, $dryRun, $composerSetup);
+            $this->writeGeneratedFiles($this->io, $result, $outputDir, $force, $namespace, $generateFoundation, $dryRun, $composerSetup);
 
             // Run Pint to format generated files
-            (new PintRunner())->run($outputDir, $this->io);
+            (new PintRunner())->run($outputDir, $output);
 
             $this->io->success("SDK generated successfully in {$outputDir}");
         }
@@ -281,9 +286,6 @@ class GenerateCommand extends Command
         $result,
         string $outputDir,
         bool $force,
-        string $configKey,
-        string $connectorName,
-        ?string $baseUrl,
         string $namespace,
         bool $generateFoundation,
         bool $dryRun,
@@ -292,58 +294,18 @@ class GenerateCommand extends Command
         $written = 0;
         $skipped = 0;
 
-        // Copy Foundation files only when explicitly requested
         if ($generateFoundation) {
             $foundationCopier = new FoundationCopier();
-            $foundationCount = $foundationCopier->copy($outputDir, $namespace);
-            $written += $foundationCount;
+            $written += $foundationCopier->copy($outputDir, $namespace);
 
-            // Generate ServiceProvider
-            $serviceProviderGenerator = new ServiceProviderGenerator($namespace, $configKey, $connectorName);
-            $serviceProviderFile = $serviceProviderGenerator->generate();
-            $serviceProviderClassName = $serviceProviderGenerator->getClassName();
-            $serviceProviderPath = "{$outputDir}/src/Providers/{$serviceProviderClassName}.php";
-            if ($this->writeFile($serviceProviderPath, (string)$serviceProviderFile, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-
-            // Generate test setup files (Pest.php and TestCase.php)
-            $testSetupGenerator = new TestSetupGenerator($namespace, $configKey, $connectorName, $baseUrl);
-
-            // Write Pest.php
-            $pestPhpPath = "{$outputDir}/tests/Pest.php";
-            if ($this->writeFile($pestPhpPath, $testSetupGenerator->generatePestPhp(), $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-
-            // Write TestCase.php
-            $testCaseFile = $testSetupGenerator->generateTestCase();
-            $testCasePath = "{$outputDir}/tests/TestCase.php";
-            if ($this->writeFile($testCasePath, (string)$testCaseFile, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-
-            // After copying Foundation files, ensure composer.json exists and add required packages and settings
             $io->section('Composer setup');
-            $composerSetup->setup($namespace, $io, $dryRun, $connectorName);
+            $composerSetup->setup($namespace, $io, $dryRun, $result->connectorClass ? $this->getClassNameFromPhpFile($result->connectorClass) : null);
 
-            if ((new ConfigGenerator())->write($outputDir, $configKey, $baseUrl, $force)){
-              $written++;
-            } else {
-                $skipped++;
-            }
-
-            // Write connector (single PhpFile, not array)
-            if ($generateFoundation && $result->connectorClass !== null) {
+            // Write connector
+            if ($result->connectorClass !== null) {
                 $className = $this->getClassNameFromPhpFile($result->connectorClass);
                 $path = "{$outputDir}/src/{$className}.php";
-                if ($this->writeFile($path, (string)$result->connectorClass, $force)) {
+                if ($this->writeFile($path, (string) $result->connectorClass, $force)) {
                     $written++;
                 } else {
                     $skipped++;
