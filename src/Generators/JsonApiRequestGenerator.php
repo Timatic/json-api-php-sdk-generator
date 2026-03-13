@@ -20,7 +20,7 @@ class JsonApiRequestGenerator extends RequestGenerator
 {
     use DtoHelperTrait;
 
-    private ApiSpecification $specification;
+    protected ApiSpecification $specification;
 
     /**
      * Get Foundation class with target namespace
@@ -116,9 +116,7 @@ class JsonApiRequestGenerator extends RequestGenerator
         }
 
         $modelClass = $this->foundationClass('Hydration\\Model');
-
-        // Get specific DTO type from requestBody schema
-        $dtoType = $this->getRequestBodyDtoType($endpoint, $modelClass);
+        $dtoType = $this->getRequestBodyDtoType($endpoint);
 
         if ($dtoType !== $modelClass) {
             // Specific DTO found
@@ -250,11 +248,6 @@ class JsonApiRequestGenerator extends RequestGenerator
         $namespace->addUse(Response::class);
         $namespace->addUse("{$this->config->namespace}\\Dto\\{$dtoClassName}");
 
-        // Add $model property - use the imported class name with ::class
-        $classType->addProperty('model')
-            ->setProtected()
-            ->setValue(new \Nette\PhpGenerator\Literal("{$dtoClassName}::class"));
-
         // Add createDtoFromResponse method
         $method = $classType->addMethod('createDtoFromResponse')
             ->setReturnType('mixed');
@@ -319,23 +312,20 @@ class JsonApiRequestGenerator extends RequestGenerator
     /**
      * Get the specific DTO type for request body, or fallback to Model
      */
-    protected function getRequestBodyDtoType(Endpoint $endpoint, string $fallbackModelClass): string
+    protected function getRequestBodyDtoType(Endpoint $endpoint): ?string
     {
-        // Check if endpoint has requestBody schema reference
+        $fallback = $this->foundationClass('Hydration\\Model');
+
         if (! $endpoint->requestBodySchema) {
-            return $fallbackModelClass;
+            return $fallback;
         }
 
         $schemaName = $endpoint->requestBodySchema;
 
-        // Validate that the schema exists in components
         if (! isset($this->specification->components->schemas[$schemaName])) {
-            return $fallbackModelClass;
+            return $fallback;
         }
 
-        // Build DTO class name
-        $dtoClass = $this->config->namespace . '\\Dto\\' . $schemaName;
-
-        return $dtoClass;
+        return $this->config->namespace . '\\Dto\\' . $schemaName;
     }
 }
