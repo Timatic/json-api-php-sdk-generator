@@ -192,8 +192,11 @@ class GenerateCommand extends Command
         // Parse specification
         $this->io->section('Parsing OpenAPI Specification');
 
+        if ($this->isUrl($specPath)) {
+            $specPath = $this->downloadSpec($specPath);
+        }
+
         try {
-            // OpenApiParser::build() takes a file path and parses it directly
             $parser = OpenApiParser::build($specPath);
             $specification = $parser->parse();
             $this->io->success('Specification parsed successfully');
@@ -255,6 +258,28 @@ class GenerateCommand extends Command
     private function isUrl(string $path): bool
     {
         return str_starts_with($path, 'http://') || str_starts_with($path, 'https://');
+    }
+
+    private function downloadSpec(string $url): string
+    {
+        $this->io->text("Downloading spec from {$url}...");
+
+        $content = @file_get_contents($url, false, stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]));
+
+        if ($content === false) {
+            throw new \RuntimeException("Failed to download specification from {$url}");
+        }
+
+        $extension = str_ends_with($url, '.json') ? '.json' : '.yaml';
+        $tempFile = tempnam(sys_get_temp_dir(), 'openapi') . $extension;
+        file_put_contents($tempFile, $content);
+
+        return $tempFile;
     }
 
     private function listGeneratedFiles(SymfonyStyle $io, $result, string $outputDir, string $configKey): void

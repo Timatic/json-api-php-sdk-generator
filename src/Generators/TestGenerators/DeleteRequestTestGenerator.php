@@ -26,6 +26,7 @@ class DeleteRequestTestGenerator
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
         $this->namespace = $namespace;
+        $this->dtoResolver = $dtoResolver;
     }
 
     public function isApplicable(Endpoint $endpoint): bool

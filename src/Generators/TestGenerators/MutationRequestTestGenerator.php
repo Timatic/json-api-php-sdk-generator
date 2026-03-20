@@ -36,11 +36,17 @@ class MutationRequestTestGenerator
         $this->specification = $specification;
         $this->generatedCode = $generatedCode;
         $this->namespace = $namespace;
+        $this->dtoResolver = $dtoResolver;
     }
 
     public function isApplicable(Endpoint $endpoint): bool
     {
         return $endpoint->method->isPost() || $endpoint->method->isPatch();
+    }
+
+    public function getRequestBodyDtoClassName(Endpoint $endpoint): ?string
+    {
+        return $this->dtoResolver->resolveRequestBodyDtoFqn($endpoint);
     }
 
     /**

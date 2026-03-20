@@ -75,12 +75,15 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         $resolveBaseUrl->setBody("return config('{$configKey}.base_url');");
 
         // Remove resource methods (we don't generate Resource classes)
-        $knownMethods = ['__construct', 'resolveBaseUrl', 'defaultAuth', 'defaultConfig'];
+        $knownMethods = ['__construct', 'resolveBaseUrl', 'defaultConfig'];
         foreach ($classType->getMethods() as $methodName => $method) {
             if (!in_array($methodName, $knownMethods, true)) {
                 $classType->removeMethod($methodName);
             }
         }
+
+        // Add defaultAuth with null-safe token handling
+        $this->addDefaultAuth($classType, $namespace);
 
         // Add defaultHeaders method
         $this->addDefaultHeaders($classType);
@@ -103,6 +106,23 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
                 $classType->removeMethod('__construct');
             }
         }
+    }
+
+    public function addDefaultAuth(ClassType $classType, $namespace): void
+    {
+        $namespace->addUse('Saloon\Contracts\Authenticator');
+        $namespace->addUse('Saloon\Http\Auth\TokenAuthenticator');
+
+        $method = $classType->addMethod('defaultAuth')
+            ->setReturnType('?Saloon\Contracts\Authenticator');
+
+        $method->setBody(<<<'PHP'
+if ($this->bearerToken === null) {
+    return null;
+}
+
+return new TokenAuthenticator($this->bearerToken, 'Bearer');
+PHP);
     }
 
     public function addDefaultHeaders(ClassType $classType): void

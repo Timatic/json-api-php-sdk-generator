@@ -100,30 +100,20 @@ class JsonApiRequestGenerator extends RequestGenerator
             }
         }
 
-        // Add hydration support to GET, POST, and PATCH requests
-        if ($this->shouldHaveHydration($endpoint)) {
-            $this->addHydrationSupport($classType, $namespace, $endpoint);
-        }
     }
 
     /**
      * Hook: Customize constructor for mutation requests
      */
-    protected function customizeConstructor($classConstructor, ClassType $classType, $namespace, Endpoint $endpoint): void
+    protected function addRequestBodyParameter(Endpoint $endpoint, $namespace, $classConstructor, $classType)
     {
-        if (! $this->isMutationRequest($endpoint)) {
-            return;
-        }
-
         $modelClass = $this->foundationClass('Hydration\\Model');
         $dtoType = $this->getRequestBodyDtoType($endpoint);
 
         if ($dtoType !== $modelClass) {
-            // Specific DTO found
             $namespace->addUse($dtoType);
             $typeHint = '\\' . $dtoType . '|array|null';
         } else {
-            // Fallback to generic Model
             $namespace->addUse($modelClass);
             $typeHint = '\\' . $modelClass . '|array|null';
         }
@@ -257,16 +247,14 @@ class JsonApiRequestGenerator extends RequestGenerator
 
         // Use appropriate hydration method based on request type
         if ($this->isCollectionRequest($endpoint)) {
-            // Collection: use hydrateCollection
             $method->addBody('return Hydrator::hydrateCollection(');
-            $method->addBody('    $this->model,');
+            $method->addBody("    {$dtoClassName}::class,");
             $method->addBody('    $response->json(\'data\'),');
             $method->addBody('    $response->json(\'included\')');
             $method->addBody(');');
         } else {
-            // Single resource: use hydrate
             $method->addBody('return Hydrator::hydrate(');
-            $method->addBody('    $this->model,');
+            $method->addBody("    {$dtoClassName}::class,");
             $method->addBody('    $response->json(\'data\'),');
             $method->addBody('    $response->json(\'included\')');
             $method->addBody(');');
@@ -323,6 +311,11 @@ class JsonApiRequestGenerator extends RequestGenerator
         $schemaName = $endpoint->requestBodySchema;
 
         if (! isset($this->specification->components->schemas[$schemaName])) {
+            return $fallback;
+        }
+
+        // Request/Identifier schemas are excluded from DTO generation
+        if (str_ends_with($schemaName, 'Request') || str_ends_with($schemaName, 'Identifier')) {
             return $fallback;
         }
 
