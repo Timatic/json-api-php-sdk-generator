@@ -40,12 +40,10 @@ class JsonApiDtoGenerator extends DtoGenerator
     {
         $properties = [];
 
-        // Include id from root level
         if (isset($schema->properties['id'])) {
             $properties['id'] = $schema->properties['id'];
         }
 
-        // Include attributes from sub-schema
         if (isset($schema->properties['attributes'])) {
             $attributesSchema = $schema->properties['attributes'];
 

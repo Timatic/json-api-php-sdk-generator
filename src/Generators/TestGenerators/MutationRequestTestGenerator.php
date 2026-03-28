@@ -49,42 +49,29 @@ class MutationRequestTestGenerator
         return $this->dtoResolver->resolveRequestBodyDtoFqn($endpoint);
     }
 
-    /**
-     * Get the stub path for mutation request tests
-     */
     public function getStubPath(): string
     {
         return __DIR__.'/stubs/pest-mutation-test-func.stub';
     }
 
-    /**
-     * Replace stub variables with mutation-specific content
-     */
     public function replaceStubVariables(string $functionStub, Endpoint $endpoint): string
     {
-        // Generate DTO instantiation code
         $dtoInstantiation = $this->generateDtoInstantiation($endpoint);
         $functionStub = str_replace('{{ dtoInstantiation }}', $dtoInstantiation, $functionStub);
 
-        // Generate body validation code
         $bodyValidation = $this->generateBodyValidation($endpoint);
         $functionStub = str_replace('{{ bodyValidation }}', $bodyValidation, $functionStub);
 
-        // Generate method arguments (including $dto)
         $methodArguments = $this->generateMethodArguments($endpoint);
         $functionStub = str_replace('{{ mutationMethodArguments }}', $methodArguments, $functionStub);
 
         return $functionStub;
     }
 
-    /**
-     * Generate method arguments for resource method call
-     */
     protected function generateMethodArguments(Endpoint $endpoint): string
     {
         $args = [];
 
-        // Add path parameters first (e.g., budgetId for PATCH)
         foreach ($endpoint->pathParameters as $param) {
             $paramName = NameHelper::safeVariableName($param->name);
             $value = $this->generateValue($paramName, $param->type);
@@ -92,7 +79,6 @@ class MutationRequestTestGenerator
             $args[] = "{$paramName}: {$formattedValue}";
         }
 
-        // Add required query parameters next (non-nullable)
         foreach ($endpoint->queryParameters as $param) {
             if ($param->nullable) {
                 continue;
@@ -104,7 +90,6 @@ class MutationRequestTestGenerator
             $args[] = "{$paramName}: {$formattedValue}";
         }
 
-        // Add $dto parameter last - use named argument if there are path params or query params
         if (empty($endpoint->pathParameters) && empty($endpoint->queryParameters)) {
             $args[] = '$dto';
         } else {
@@ -114,9 +99,6 @@ class MutationRequestTestGenerator
         return implode(', ', $args);
     }
 
-    /**
-     * Generate DTO instantiation code with sample data using factory
-     */
     protected function generateDtoInstantiation(Endpoint $endpoint): string
     {
         $dtoClassName = $this->getDtoClassName($endpoint);
@@ -130,9 +112,6 @@ class MutationRequestTestGenerator
         return implode("\n", $lines);
     }
 
-    /**
-     * Generate factory state array with test data
-     */
     protected function generateFactoryStateArray(Endpoint $endpoint): string
     {
         $filteredProperties = $this->getFilteredPropertiesForTest($endpoint);
@@ -143,7 +122,6 @@ class MutationRequestTestGenerator
             $propName = $propInfo['name'];
 
             if ($propInfo['isDateTime']) {
-                // Generate Carbon::parse() for DateTime fields
                 $dateString = $this->generateValue($propName, $propInfo['type']);
                 $lines[] = "        '{$propName}' => \\Carbon\\Carbon::parse('{$dateString}'),";
             } else {
@@ -152,7 +130,6 @@ class MutationRequestTestGenerator
             }
         }
 
-        // Fallback if no properties after filtering
         if (empty($lines)) {
             return "        'name' => 'test value',";
         }
@@ -176,16 +153,14 @@ class MutationRequestTestGenerator
             $propName = $property->getName();
             $propType = $property->getType();
 
-            // Skip read-only/auto-managed fields
             if (in_array($propName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
                 continue;
             }
             
-            if(!in_array($propType, ['string', 'int', 'float', 'bool', 'null'])){
+            if (! in_array($propType, ['string', 'int', 'float', 'bool', 'null'])) {
                 continue;
             }
                 
-            // Check if this is a Carbon/DateTime field
             $isDateTime = $propType && str_contains($propType, 'Carbon');
 
             $filtered[] = [
@@ -198,39 +173,6 @@ class MutationRequestTestGenerator
         return array_slice($filtered, 0, 4);
     }
 
-    /**
-     * Generate DTO property assignments
-     */
-    protected function generateDtoProperties(Endpoint $endpoint): string
-    {
-        $filteredProperties = $this->getFilteredPropertiesForTest($endpoint);
-
-        $lines = [];
-
-        foreach ($filteredProperties as $propInfo) {
-            $propName = $propInfo['name'];
-
-            if ($propInfo['isDateTime']) {
-                // Generate Carbon::parse() for DateTime fields
-                $dateString = $this->generateValue($propName, $propInfo['type']);
-                $lines[] = "    \$dto->{$propName} = \\Carbon\\Carbon::parse('{$dateString}');";
-            } else {
-                $value = $this->formatAsCode($this->generateValue($propName, $propInfo['type']));
-                $lines[] = "    \$dto->{$propName} = {$value};";
-            }
-        }
-
-        // Fallback if no properties after filtering
-        if (empty($lines)) {
-            return "    \$dto->name = 'test value';";
-        }
-
-        return implode("\n", $lines);
-    }
-
-    /**
-     * Generate body validation code
-     */
     protected function generateBodyValidation(Endpoint $endpoint): string
     {
         $resourceType = $this->getResourceTypeFromEndpoint($endpoint);
@@ -243,14 +185,12 @@ class MutationRequestTestGenerator
         $lines[] = '        expect($request->body()->all())';
         $lines[] = "            ->toHaveKey('data')";
 
-        // Generate attribute validations
         if ($attributeValidations) {
             $lines[] = "            ->data->type->toBe('{$resourceType}')";
             $lines[] = '            ->data->attributes->scoped(fn ($attributes) => $attributes';
             $lines[] = $attributeValidations;
             $lines[] = '            );';
         } else {
-            // No attributes to validate, just close the chain
             $lines[] = "            ->data->type->toBe('{$resourceType}');";
         }
 
@@ -261,9 +201,6 @@ class MutationRequestTestGenerator
         return implode("\n", $lines);
     }
 
-    /**
-     * Generate attribute validation chain from DTO properties
-     */
     protected function generateAttributeValidationsFromDto(Endpoint $endpoint): string
     {
         $filteredProperties = $this->getFilteredPropertiesForTest($endpoint);
@@ -273,7 +210,6 @@ class MutationRequestTestGenerator
             $propName = $propInfo['name'];
 
             if ($propInfo['isDateTime']) {
-                // Generate toEqual(new \Carbon\Carbon(...)) assertion for DateTime fields
                 $dateString = $this->generateValue($propName, $propInfo['type']);
                 $lines[] = "                ->{$propName}->toEqual(new \\Carbon\\Carbon('{$dateString}'))";
             } else {

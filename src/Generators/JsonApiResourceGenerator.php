@@ -12,16 +12,11 @@ use Nette\PhpGenerator\Method;
 
 class JsonApiResourceGenerator extends ResourceGenerator
 {
-    /**
-     * Get Foundation class with target namespace
-     */
     protected function foundationClass(string $relativePath): string
     {
-        return $this->config->namespace . '\\Foundation\\' . $relativePath;
+        return $this->config->namespace.'\\Foundation\\'.$relativePath;
     }
-    /**
-     * Hook: Filter out PUT requests - not supported in JSON:API
-     */
+
     protected function shouldIncludeEndpoint(Endpoint $endpoint): bool
     {
         if ($endpoint->method->isPut()) {
@@ -31,13 +26,8 @@ class JsonApiResourceGenerator extends ResourceGenerator
         return true;
     }
 
-    /**
-     * Hook: Add "Request" suffix to request class names
-     * For collection requests, add "Collection" before "Request"
-     */
     protected function getRequestClassName(Endpoint $endpoint): string
     {
-        // Use inline collection detection
         $isCollection = $endpoint->method->isGet() && empty($endpoint->pathParameters);
 
         $className = parent::getRequestClassName($endpoint);
@@ -53,12 +43,8 @@ class JsonApiResourceGenerator extends ResourceGenerator
         return $className;
     }
 
-    /**
-     * Hook: Strip "Request" suffix from method names
-     */
     protected function getMethodName(Endpoint $endpoint, string $requestClassName): string
     {
-        // Strip "Request" suffix if present to get clean method names
         $methodBaseName = str_ends_with($requestClassName, 'Request')
             ? substr($requestClassName, 0, -7)
             : $requestClassName;
@@ -66,9 +52,6 @@ class JsonApiResourceGenerator extends ResourceGenerator
         return \Crescat\SaloonSdkGenerator\Helpers\NameHelper::safeVariableName($methodBaseName);
     }
 
-    /**
-     * Hook: Transform path parameter names (e.g., budget -> budgetId)
-     */
     protected function getResourceParameterName(Parameter $parameter, bool $isPathParam): string
     {
         if ($isPathParam) {
@@ -78,9 +61,6 @@ class JsonApiResourceGenerator extends ResourceGenerator
         return $parameter->name;
     }
 
-    /**
-     * Hook: Customize resource method for mutation requests
-     */
     protected function customizeResourceMethod(\Nette\PhpGenerator\Method $method, $namespace, array &$args, Endpoint $endpoint): void
     {
         if (! ($endpoint->method->isPost() || $endpoint->method->isPatch())) {

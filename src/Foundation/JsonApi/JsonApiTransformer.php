@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Timatic\JsonApiSdk\Foundation\JsonApi;
 
-use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use ReflectionClass;
-use ReflectionNamedType;
 use Spatie\LaravelData\Data;
 use Timatic\JsonApiSdk\Foundation\JsonApi\Attributes\JsonApiRelationship;
 
@@ -25,26 +23,10 @@ class JsonApiTransformer
      */
     public static function flatten(string $dtoClass, array $item, ?array $included = null): array
     {
-        $indexed = static::indexIncluded($included ?? []);
-
-        $flat = ['id' => $item['id'] ?? null];
-
-        foreach ($item['attributes'] ?? [] as $key => $value) {
-            $flat[$key] = $value;
-        }
-
-        $relationships = $item['relationships'] ?? [];
-
-        if (! empty($relationships)) {
-            static::resolveRelationships($dtoClass, $relationships, $indexed, $flat);
-        }
-
-        return $flat;
+        return static::flattenWithIndexed($dtoClass, $item, static::indexIncluded($included ?? []));
     }
 
     /**
-     * Flatten a collection of JSON:API resource items.
-     *
      * @param  class-string<Data>  $dtoClass
      * @param  array<int, mixed>  $data
      * @param  array<int, mixed>|null  $included

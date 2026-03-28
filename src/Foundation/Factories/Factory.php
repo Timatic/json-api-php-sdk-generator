@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Timatic\JsonApiSdk\Foundation\Factories;
 
 use Faker\Factory as FakerFactory;

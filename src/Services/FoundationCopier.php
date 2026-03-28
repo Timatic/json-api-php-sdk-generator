@@ -14,7 +14,7 @@ class FoundationCopier
 
     public function __construct()
     {
-        $this->sourceDir = dirname(__DIR__) . '/Foundation';
+        $this->sourceDir = dirname(__DIR__).'/Foundation';
     }
 
     /**
@@ -44,8 +44,6 @@ class FoundationCopier
     }
 
     /**
-     * Get all PHP files in the Foundation directory, excluding the legacy Hydration directory.
-     *
      * @return array<string>
      */
     private function getFoundationFiles(): array
@@ -60,45 +58,31 @@ class FoundationCopier
                 continue;
             }
 
-            // Skip the legacy Hydration directory
-            if (str_contains($file->getPathname(), '/Foundation/Hydration/')) {
-                continue;
-            }
-
             $files[] = $file->getPathname();
         }
 
         return $files;
     }
 
-    /**
-     * Get the relative path from the Foundation source directory.
-     */
     private function getRelativePath(string $filePath): string
     {
-        return str_replace($this->sourceDir . '/', '', $filePath);
+        return str_replace($this->sourceDir.'/', '', $filePath);
     }
 
-    /**
-     * Rewrite the namespace in the file content.
-     */
     private function rewriteNamespace(string $content, string $targetNamespace): string
     {
-        // Replace namespace declarations
         $content = str_replace(
             'namespace Timatic\JsonApiSdk\\Foundation',
             "namespace {$targetNamespace}\\Foundation",
             $content
         );
 
-        // Replace use statements
         $content = str_replace(
             'use Timatic\JsonApiSdk\\Foundation\\',
             "use {$targetNamespace}\\Foundation\\",
             $content
         );
 
-        // Replace fully qualified class names (with leading backslash)
         $content = str_replace(
             '\\Timatic\JsonApiSdk\\Foundation\\',
             "\\{$targetNamespace}\\Foundation\\",
@@ -108,13 +92,10 @@ class FoundationCopier
         return $content;
     }
 
-    /**
-     * Write content to a file, creating directories as needed.
-     */
     private function writeFile(string $path, string $content): void
     {
         $dir = dirname($path);
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 

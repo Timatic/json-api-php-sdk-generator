@@ -31,16 +31,10 @@ class ComposerSetup
         }
     }
 
-    /**
-     * Extract the PSR-4 namespace from composer.json.
-     *
-     * Prefers the namespace that maps to src/, otherwise falls back to the first PSR-4 entry.
-     */
     public function getNamespace(): string
     {
         $psr4 = $this->composerJson['autoload']['psr-4'];
 
-        // Prefer mapping that points to src/
         foreach ($psr4 as $ns => $path) {
             if (rtrim($path, '/\\') === 'src') {
                 return rtrim($ns, '\\');
@@ -75,7 +69,6 @@ class ComposerSetup
 
     private function runComposerRequires(string $outputDir, SymfonyStyle $io, bool $dryRun): void
     {
-        // Runtime packages (skip php platform constraint in commands)
         $require = [
             'saloonphp/saloon:^3.0',
             'saloonphp/laravel-plugin:^3.0',
@@ -84,7 +77,6 @@ class ComposerSetup
             'spatie/laravel-data:^3.10|^4.0',
         ];
 
-        // Dev packages
         $requireDev = [
             'fakerphp/faker:^1.23',
             'laravel/boost:^1.8',
@@ -96,7 +88,6 @@ class ComposerSetup
             'ergebnis/composer-normalize'
         ];
 
-        // Quote each package spec to prevent shell interpretation of | as pipe
         $quotedRequire = array_map(fn ($pkg) => "'{$pkg}'", $require);
         $quotedRequireDev = array_map(fn ($pkg) => "'{$pkg}'", $requireDev);
 
@@ -127,7 +118,7 @@ class ComposerSetup
         // Add Laravel auto-discovery if connector name is provided
         if ($connectorName) {
             $appName = preg_replace('/Connector$/', '', $connectorName);
-            $serviceProviderClass = $ns . 'Providers\\' . $appName . 'ServiceProvider';
+            $serviceProviderClass = $ns.'Providers\\'.$appName.'ServiceProvider';
 
             $defaults['extra'] = [
                 'laravel' => [
@@ -138,7 +129,6 @@ class ComposerSetup
 
         $this->composerJson = array_replace_recursive($defaults, $this->composerJson);
 
-        // Remove empty values to prevent {} becoming [] in JSON output
         $this->composerJson = array_filter($this->composerJson);
 
         $newContent = json_encode($this->composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";

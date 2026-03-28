@@ -21,18 +21,15 @@ trait TestDataGeneratorTrait
         // Extract type and format from various input formats
         [$type, $format, $example] = $this->extractTypeInfo($typeInfo);
 
-        // Use example if available
         if ($example !== null) {
             return $example;
         }
 
-        // Boolean fields (by type or name prefix, but not if explicitly typed as string)
         $nameIsBoolLike = str_starts_with($propertyName, 'is') || str_starts_with($propertyName, 'has');
         if ($type === 'boolean' || $type === 'bool' || ($nameIsBoolLike && $type !== 'string')) {
             return true;
         }
 
-        // Numeric fields (type takes precedence over naming)
         if ($type === 'integer' || $type === 'int') {
             return 42;
         }
@@ -41,22 +38,18 @@ trait TestDataGeneratorTrait
             return 3.14;
         }
 
-        // DateTime fields (by format or name)
         if ($format === 'date-time' || str_contains($propertyName, 'At') || str_contains($propertyName, 'Date')) {
             return '2025-01-15T10:30:00Z';
         }
 
-        // Email fields
         if (str_contains($propertyName, 'email') || str_contains($propertyName, 'Email')) {
             return 'test@example.com';
         }
 
-        // ID fields - only if type is string or null
         if (str_ends_with($propertyName, 'Id') && ($type === 'string' || $type === null)) {
             return Str::snake($propertyName).'-123';
         }
 
-        // Array/Object fields
         if ($type === 'array') {
             return [];
         }
@@ -65,7 +58,6 @@ trait TestDataGeneratorTrait
             return (object) [];
         }
 
-        // Common string property names
         if ($type === 'string' || $type === null) {
             if ($propertyName === 'title') {
                 return 'test title';
@@ -80,12 +72,6 @@ trait TestDataGeneratorTrait
             return 'test value';
         }
 
-        // Handle 'mixed' type
-        if ($type === 'mixed') {
-            return 'test value';
-        }
-
-        // Fallback for any unknown types
         return 'test value';
     }
 
@@ -127,12 +113,8 @@ trait TestDataGeneratorTrait
         return "'{$value}'";
     }
 
-    /**
-     * Format a value for use in assertions (alias for formatAsCode for backward compatibility)
-     */
     protected function formatValueForAssertion(string $value): string
     {
-        // If value is already quoted or a keyword, return as-is
         if (
             (str_starts_with($value, "'") && str_ends_with($value, "'")) ||
             $value === 'true' ||
@@ -142,7 +124,6 @@ trait TestDataGeneratorTrait
             return $value;
         }
 
-        // Wrap in quotes
         return "'{$value}'";
     }
 
@@ -170,25 +151,19 @@ trait TestDataGeneratorTrait
         }
 
         if (is_string($typeInfo)) {
-            // Normalize type name (remove nullable prefix)
             $normalizedType = ltrim($typeInfo, '?');
 
-            // Handle union types (e.g., "string|null", "string|float", "int|null")
             if (str_contains($normalizedType, '|')) {
                 $types = explode('|', $normalizedType);
-                // Filter out 'null' and 'mixed', get the first concrete type
                 $concreteTypes = array_filter($types, fn ($t) => ! in_array(trim($t), ['null', 'mixed']));
 
                 if (! empty($concreteTypes)) {
-                    // Use the first concrete type
                     $normalizedType = trim(reset($concreteTypes));
                 } else {
-                    // If all types are null/mixed, default to string
                     $normalizedType = 'string';
                 }
             }
 
-            // Check for DateTime type hints
             if (str_contains($normalizedType, 'Carbon') || str_contains($normalizedType, 'DateTime')) {
                 return ['string', 'date-time', null];
             }

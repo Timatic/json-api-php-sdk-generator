@@ -50,7 +50,6 @@ class JsonApiFactoryGenerator extends FactoryGenerator
                 continue;
             }
 
-            // Skip relationship promoted parameters
             if ($this->hasAttribute($param, 'JsonApiRelationship')) {
                 continue;
             }

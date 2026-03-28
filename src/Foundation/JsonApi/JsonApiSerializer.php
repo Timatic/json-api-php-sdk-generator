@@ -17,14 +17,13 @@ class JsonApiSerializer
      * Convert a Spatie Data object to JSON:API format.
      * Returns the data object (without the outer 'data' wrapper).
      *
-     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
      */
     public static function toJsonApi(Data $data): array
     {
         $reflection = new ReflectionClass($data);
 
-        $type = static::deriveType($reflection->getShortName());
-        $result = ['type' => $type];
+        $result = ['type' => static::deriveType($reflection->getShortName())];
 
         $id = static::getProperty($data, 'id');
         if ($id !== null) {
@@ -47,29 +46,10 @@ class JsonApiSerializer
                 $relationAttrs = $param->getAttributes(JsonApiRelationship::class);
 
                 if (! empty($relationAttrs)) {
-                    $value = static::getProperty($data, $name);
+                    $resolved = static::resolveRelationship($data, $name, $relationAttrs[0]->newInstance());
 
-                    if ($value === null) {
-                        continue;
-                    }
-
-                    /** @var JsonApiRelationship $attr */
-                    $attr = $relationAttrs[0]->newInstance();
-
-                    if ($attr->type === RelationType::Many && $value instanceof Collection) {
-                        $relationships[$name] = [
-                            'data' => $value->map(fn (Data $item) => [
-                                'type' => static::deriveType((new ReflectionClass($item))->getShortName()),
-                                'id' => static::getProperty($item, 'id'),
-                            ])->values()->all(),
-                        ];
-                    } elseif ($attr->type === RelationType::One && $value instanceof Data) {
-                        $relationships[$name] = [
-                            'data' => [
-                                'type' => static::deriveType((new ReflectionClass($value))->getShortName()),
-                                'id' => static::getProperty($value, 'id'),
-                            ],
-                        ];
+                    if ($resolved !== null) {
+                        $relationships[$name] = $resolved;
                     }
                 } else {
                     $value = static::getProperty($data, $name);
@@ -88,6 +68,35 @@ class JsonApiSerializer
         }
 
         return $result;
+    }
+
+    private static function resolveRelationship(Data $data, string $name, JsonApiRelationship $attr): ?array
+    {
+        $value = static::getProperty($data, $name);
+
+        if ($value === null) {
+            return null;
+        }
+
+        if ($attr->type === RelationType::Many && $value instanceof Collection) {
+            return [
+                'data' => $value->map(fn (Data $item) => static::resourceIdentifier($item))->values()->all(),
+            ];
+        }
+
+        if ($attr->type === RelationType::One && $value instanceof Data) {
+            return ['data' => static::resourceIdentifier($value)];
+        }
+
+        return null;
+    }
+
+    private static function resourceIdentifier(Data $item): array
+    {
+        return [
+            'type' => static::deriveType((new ReflectionClass($item))->getShortName()),
+            'id' => static::getProperty($item, 'id'),
+        ];
     }
 
     private static function deriveType(string $shortName): string

@@ -63,31 +63,26 @@ class CollectionRequestTestGenerator
             $functionStub = str_replace('{{ filterAssertionBlock }}', '', $functionStub);
         }
 
-        // Add include chain and assertions
         $includeData = $this->generateIncludeChainWithData($endpoint);
 
-        // Add newline before include chain if there are filters
         if (! empty($filterData['chain']) && ! empty($includeData['chain'])) {
             $functionStub = str_replace('{{ includeChain }}', "\n\t\t".$includeData['chain'], $functionStub);
         } else {
             $functionStub = str_replace('{{ includeChain }}', $includeData['chain'], $functionStub);
         }
 
-        // Only include assertion if there are includes
         if (! empty($includeData['assertion'])) {
             $functionStub = str_replace('{{ includeAssertion }}', $includeData['assertion'], $functionStub);
         } else {
             $functionStub = str_replace('{{ includeAssertion }}', '', $functionStub);
         }
 
-        // Add relationship assertions if there are includes
         if (! empty($includeData['relationshipAssertions'])) {
             $functionStub = str_replace('{{ relationshipAssertions }}', "\n\t\t".$includeData['relationshipAssertions'], $functionStub);
         } else {
             $functionStub = str_replace('{{ relationshipAssertions }}', '', $functionStub);
         }
 
-        // Add non-filter query parameters (like 'include')
         $nonFilterParams = $this->getNonFilterQueryParameters($endpoint);
         $functionStub = str_replace('{{ nonFilterParams }}', $nonFilterParams, $functionStub);
 
@@ -102,9 +97,7 @@ class CollectionRequestTestGenerator
 
         $dtoAssertions = $this->generateDtoAssertions($mockData);
 
-        // If no valid assertions (comments only), remove the DTO validation block entirely
         if (str_starts_with(trim($dtoAssertions), '//')) {
-            // Remove the entire DTO validation block
             $pattern = '/(.*\$response->status\(\)\)->toBe\(200\);.*?)(\n\s*\$dtoCollection = \$response->dto\(\);.*?{{ dtoAssertions }};)/s';
             $functionStub = preg_replace($pattern, '$1', $functionStub);
         } else {
@@ -150,31 +143,26 @@ class CollectionRequestTestGenerator
             foreach ($relationships as $index => $relationName) {
                 $relatedModel = $this->detectRelatedModel($relationName);
 
-                // Skip if the related model doesn't exist in the schema
                 if (! isset($this->specification->components->schemas[$relatedModel])) {
                     continue;
                 }
 
                 $relationType = strtolower(Str::plural($relatedModel));
 
-                // Check if this is a "Many" relationship
                 $isMany = Str::plural($relationName) === $relationName;
 
                 if ($isMany) {
-                    // For "Many" relationships, data should be an array of objects
                     $relationshipsData[$relationName] = [
                         'data' => [
                             ['type' => $relationType, 'id' => "related-{$relationName}-1"],
                         ],
                     ];
                 } else {
-                    // For "One" relationships, data is a single object
                     $relationshipsData[$relationName] = [
                         'data' => ['type' => $relationType, 'id' => "related-{$relationName}-1"],
                     ];
                 }
 
-                // Add to included array with minimal attributes
                 $included[] = [
                     'type' => $relationType,
                     'id' => "related-{$relationName}-1",
@@ -182,20 +170,14 @@ class CollectionRequestTestGenerator
                 ];
             }
 
-            // Add relationships to both data items
             $data['data'][0]['relationships'] = $relationshipsData;
             $data['data'][1]['relationships'] = $relationshipsData;
-
-            // Add included array
             $data['included'] = $included;
         }
 
         return $data;
     }
 
-    /**
-     * Generate a fluent filter chain with 2-3 representative examples and their assertions
-     */
     protected function generateFilterChainWithData(Endpoint $endpoint): array
     {
         $filters = [];
@@ -203,18 +185,15 @@ class CollectionRequestTestGenerator
         $maxFilters = 3;
         $seenProperties = [];
 
-        // Extract filter parameters from query parameters
         foreach ($endpoint->queryParameters as $parameter) {
             if (count($filters) >= $maxFilters) {
                 break;
             }
 
-            // Skip non-filter parameters
             if (! str_starts_with($parameter->name, 'filter[')) {
                 continue;
             }
 
-            // Parse filter[property][operator] or filter[property]
             preg_match('/filter\[([^\]]+)\](?:\[([^\]]+)\])?/', $parameter->name, $matches);
             $property = $matches[1] ?? null;
             $operator = $matches[2] ?? null;
@@ -223,12 +202,10 @@ class CollectionRequestTestGenerator
                 continue;
             }
 
-            // Skip if we already have a filter for this property (avoid duplicates with operators)
             if (isset($seenProperties[$property])) {
                 continue;
             }
 
-            // Only add filters without operators (simpler)
             if (! $operator) {
                 $value = $this->formatAsCode($this->generateValue($property));
                 $filters[] = "->filter('{$property}', {$value})";
@@ -246,32 +223,22 @@ class CollectionRequestTestGenerator
         ];
     }
 
-    /**
-     * Generate a filter assertion for the given property and value
-     */
     protected function generateFilterAssertion(string $property, string $value): string
     {
-        // Handle both string and boolean values
         if ($value === 'true' || $value === 'false') {
-            // Boolean values
             return "expect(\$query)->toHaveKey('filter[{$property}]', {$value});";
         }
 
-        // String values - remove quotes for the assertion
         $assertionValue = trim($value, "'");
 
         return "expect(\$query)->toHaveKey('filter[{$property}]', '{$assertionValue}');";
     }
 
-    /**
-     * Get non-filter query parameters (like 'include')
-     */
     protected function getNonFilterQueryParameters(Endpoint $endpoint): string
     {
         $params = [];
 
         foreach ($endpoint->queryParameters as $parameter) {
-            // Skip filter parameters and include parameter (handled by HasIncludes trait)
             if (! str_starts_with($parameter->name, 'filter[') && $parameter->name !== 'include') {
                 $paramName = NameHelper::safeVariableName($parameter->name);
                 $value = match ($parameter->type) {
@@ -288,9 +255,6 @@ class CollectionRequestTestGenerator
         return implode(', ', array_values($params));
     }
 
-    /**
-     * Check if endpoint has include query parameter
-     */
     protected function hasIncludeParameter(Endpoint $endpoint): bool
     {
         foreach ($endpoint->queryParameters as $param) {
@@ -302,9 +266,6 @@ class CollectionRequestTestGenerator
         return false;
     }
 
-    /**
-     * Get relationships from the DTO schema
-     */
     protected function getRelationshipsFromSchema(string $dtoClassName): array
     {
         if (! isset($this->specification->components->schemas[$dtoClassName])) {
@@ -326,9 +287,6 @@ class CollectionRequestTestGenerator
         return array_keys($relationships->properties);
     }
 
-    /**
-     * Generate include method chain with data for testing
-     */
     protected function generateIncludeChainWithData(Endpoint $endpoint): array
     {
         if (! $this->hasIncludeParameter($endpoint)) {
@@ -350,7 +308,6 @@ class CollectionRequestTestGenerator
             ];
         }
 
-        // Filter out relationships where the model doesn't exist
         $testRelationships = array_filter($relationships, function ($relationName) {
             $relatedModel = $this->detectRelatedModel($relationName);
 
@@ -365,7 +322,6 @@ class CollectionRequestTestGenerator
             ];
         }
 
-        // Generate include method calls
         $includeCalls = [];
         foreach ($testRelationships as $relationName) {
             $methodName = 'include'.Str::studly($relationName);
@@ -374,11 +330,8 @@ class CollectionRequestTestGenerator
 
         $includeChain = implode("\n\t\t", $includeCalls);
 
-        // Generate assertion for include parameter
         $expectedInclude = implode(',', $testRelationships);
         $assertion = "expect(\$query)->toHaveKey('include', '{$expectedInclude}');";
-
-        // Generate relationship hydration assertions
         $relationshipAssertions = $this->generateRelationshipAssertions($testRelationships);
 
         return [
@@ -388,18 +341,11 @@ class CollectionRequestTestGenerator
         ];
     }
 
-    /**
-     * Detect the related model class name from relationship name
-     */
     protected function detectRelatedModel(string $relationName): string
     {
-        // Convert to singular studly case (e.g., budgetType -> BudgetType, entries -> Entry)
         return Str::studly(Str::singular($relationName));
     }
 
-    /**
-     * Generate assertions to verify relationships are hydrated
-     */
     protected function generateRelationshipAssertions(array $relationships): string
     {
         $assertions = [];
@@ -408,19 +354,15 @@ class CollectionRequestTestGenerator
             $relatedModel = $this->detectRelatedModel($relationName);
             $propertyName = Str::camel($relationName);
 
-            // Skip if the related model doesn't exist in the schema
             if (! isset($this->specification->components->schemas[$relatedModel])) {
                 continue;
             }
 
-            // Check if this is likely a "Many" relationship (plural name)
             $isMany = Str::plural($relationName) === $relationName;
 
             if ($isMany) {
-                // For collection relationships, verify it's not null
                 $assertions[] = "->{$propertyName}->not->toBeNull()";
             } else {
-                // For single relationships, verify it's an instance of the related model
                 $assertions[] = "->{$propertyName}->toBeInstanceOf(\\{$this->namespace}\\Dto\\{$relatedModel}::class)";
             }
         }
