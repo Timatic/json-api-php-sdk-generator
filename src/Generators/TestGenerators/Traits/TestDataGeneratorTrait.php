@@ -26,8 +26,9 @@ trait TestDataGeneratorTrait
             return $example;
         }
 
-        // Boolean fields (by type or name prefix)
-        if ($type === 'boolean' || $type === 'bool' || str_starts_with($propertyName, 'is') || str_starts_with($propertyName, 'has')) {
+        // Boolean fields (by type or name prefix, but not if explicitly typed as string)
+        $nameIsBoolLike = str_starts_with($propertyName, 'is') || str_starts_with($propertyName, 'has');
+        if ($type === 'boolean' || $type === 'bool' || ($nameIsBoolLike && $type !== 'string')) {
             return true;
         }
 

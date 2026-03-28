@@ -87,11 +87,11 @@ class JsonApiResourceGenerator extends ResourceGenerator
             return;
         }
 
-        $modelClass = $this->foundationClass('Hydration\\Model');
-        $namespace->addUse($modelClass);
+        $dataClass = \Spatie\LaravelData\Data::class;
+        $namespace->addUse($dataClass);
 
         $dataParam = new Parameter(
-            type: $modelClass . '|array|null',
+            type: $dataClass.'|array|null',
             nullable: true,
             name: 'data',
             description: 'Request data',

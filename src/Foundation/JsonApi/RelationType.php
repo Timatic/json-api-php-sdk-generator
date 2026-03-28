@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Timatic\JsonApiSdk\Foundation\Hydration;
+namespace Timatic\JsonApiSdk\Foundation\JsonApi;
 
 enum RelationType
 {

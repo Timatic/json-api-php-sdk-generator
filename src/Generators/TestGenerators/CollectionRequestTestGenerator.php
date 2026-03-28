@@ -357,6 +357,14 @@ class CollectionRequestTestGenerator
             return isset($this->specification->components->schemas[$relatedModel]);
         });
 
+        if (empty($testRelationships)) {
+            return [
+                'chain' => '',
+                'assertion' => '',
+                'relationshipAssertions' => '',
+            ];
+        }
+
         // Generate include method calls
         $includeCalls = [];
         foreach ($testRelationships as $relationName) {

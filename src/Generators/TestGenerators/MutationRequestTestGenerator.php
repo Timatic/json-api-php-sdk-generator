@@ -123,7 +123,7 @@ class MutationRequestTestGenerator
         $stateArray = $this->generateFactoryStateArray($endpoint);
 
         $lines = [];
-        $lines[] = "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::factory()->state([";
+        $lines[] = "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::testFactory()->state([";
         $lines[] = $stateArray;
         $lines[] = '    ])->make();';
 

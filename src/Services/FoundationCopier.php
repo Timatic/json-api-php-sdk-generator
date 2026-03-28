@@ -44,7 +44,7 @@ class FoundationCopier
     }
 
     /**
-     * Get all PHP files in the Foundation directory.
+     * Get all PHP files in the Foundation directory, excluding the legacy Hydration directory.
      *
      * @return array<string>
      */
@@ -56,9 +56,16 @@ class FoundationCopier
         );
 
         foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                $files[] = $file->getPathname();
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
             }
+
+            // Skip the legacy Hydration directory
+            if (str_contains($file->getPathname(), '/Foundation/Hydration/')) {
+                continue;
+            }
+
+            $files[] = $file->getPathname();
         }
 
         return $files;

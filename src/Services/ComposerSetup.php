@@ -81,6 +81,7 @@ class ComposerSetup
             'saloonphp/laravel-plugin:^3.0',
             'nesbot/carbon:^2.0|^3.0',
             'saloonphp/pagination-plugin:^2.0',
+            'spatie/laravel-data:^3.10|^4.0',
         ];
 
         // Dev packages
