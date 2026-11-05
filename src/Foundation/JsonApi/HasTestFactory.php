@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace Timatic\JsonApiSdk\Foundation\JsonApi;
 
+/**
+ * @template TFactory
+ */
 trait HasTestFactory
 {
+    /**
+     * @return TFactory
+     */
     public static function testFactory(): mixed
     {
         $factoryClass = str_replace('\\Dto\\', '\\Factories\\', static::class).'Factory';
@@ -14,6 +20,6 @@ trait HasTestFactory
             return $factoryClass::new();
         }
 
-        throw new \RuntimeException("Factory [{$factoryClass}] not found for [".static::class."].");
+        throw new \RuntimeException("Factory [{$factoryClass}] not found for [".static::class.'].');
     }
 }

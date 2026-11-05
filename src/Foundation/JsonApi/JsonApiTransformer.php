@@ -23,7 +23,7 @@ class JsonApiTransformer
      */
     public static function flatten(string $dtoClass, array $item, ?array $included = null): array
     {
-        return static::flattenWithIndexed($dtoClass, $item, static::indexIncluded($included ?? []));
+        return self::flattenWithIndexed($dtoClass, $item, self::indexIncluded($included ?? []));
     }
 
     /**
@@ -34,10 +34,10 @@ class JsonApiTransformer
      */
     public static function flattenCollection(string $dtoClass, array $data, ?array $included = null): array
     {
-        $indexed = static::indexIncluded($included ?? []);
+        $indexed = self::indexIncluded($included ?? []);
 
         return array_map(
-            fn (array $item) => static::flattenWithIndexed($dtoClass, $item, $indexed),
+            fn (array $item) => self::flattenWithIndexed($dtoClass, $item, $indexed),
             $data
         );
     }
@@ -57,7 +57,7 @@ class JsonApiTransformer
         $relationships = $item['relationships'] ?? [];
 
         if (! empty($relationships)) {
-            static::resolveRelationships($dtoClass, $relationships, $indexed, $flat);
+            self::resolveRelationships($dtoClass, $relationships, $indexed, $flat);
         }
 
         return $flat;
@@ -115,17 +115,17 @@ class JsonApiTransformer
                     $includedItem = $indexed[$ref['id'].'-'.$ref['type']] ?? null;
 
                     if ($includedItem !== null) {
-                        $nestedFlat = static::flattenWithIndexed($attr->model, $includedItem, $indexed);
+                        $nestedFlat = self::flattenWithIndexed($attr->model, $includedItem, $indexed);
                         $items->push($attr->model::from($nestedFlat));
                     }
                 }
 
                 $flat[$relationName] = $items;
-            } elseif ($attr->type === RelationType::One && is_array($relationData)) {
+            } elseif (is_array($relationData)) {
                 $includedItem = $indexed[$relationData['id'].'-'.$relationData['type']] ?? null;
 
                 if ($includedItem !== null) {
-                    $nestedFlat = static::flattenWithIndexed($attr->model, $includedItem, $indexed);
+                    $nestedFlat = self::flattenWithIndexed($attr->model, $includedItem, $indexed);
                     $flat[$relationName] = $attr->model::from($nestedFlat);
                 }
             }
