@@ -88,7 +88,7 @@ class JsonApiRequestGenerator extends RequestGenerator
         $dtoType = $this->getRequestBodyDtoType($endpoint);
 
         $namespace->addUse($dtoType);
-        $typeHint = '\\'.$dtoType.'|array|null';
+        $typeHint = '\\'.$dtoType;
 
         $dataParam = new Parameter(
             type: $typeHint,
@@ -250,7 +250,7 @@ class JsonApiRequestGenerator extends RequestGenerator
             return $fallback;
         }
 
-        if (str_ends_with($schemaName, 'Request') || str_ends_with($schemaName, 'Identifier')) {
+        if (str_ends_with($schemaName, 'Identifier')) {
             return $fallback;
         }
 

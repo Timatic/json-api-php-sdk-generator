@@ -32,12 +32,12 @@ class JsonApiDtoGenerator extends DtoGenerator
 
     protected function shouldIncludeSchema(string $className, Schema $schema): bool
     {
-        return ! str_ends_with($className, 'Identifier')
-            && ! str_ends_with($className, 'Request');
+        return ! str_ends_with($className, 'Identifier');
     }
 
     protected function extractProperties(Schema $schema): array
     {
+        $schema = $this->resourceSchema($schema);
         $properties = [];
 
         if (isset($schema->properties['id'])) {
@@ -61,7 +61,33 @@ class JsonApiDtoGenerator extends DtoGenerator
     {
         parent::afterDtoClassGenerated($classType, $namespace, $schema);
 
+        $schema = $this->resourceSchema($schema);
+
+        $this->addResourceTypeAttribute($classType, $namespace, $schema);
         $this->addRelationshipProperties($classType, $namespace, $schema);
+    }
+
+    /**
+     * Request body schemas wrap the resource in a top-level `data` member.
+     */
+    protected function resourceSchema(Schema $schema): Schema
+    {
+        $data = $schema->properties['data'] ?? null;
+
+        return $data instanceof Schema && ! isset($schema->properties['attributes']) ? $data : $schema;
+    }
+
+    protected function addResourceTypeAttribute(ClassType $classType, PhpNamespace $namespace, Schema $schema): void
+    {
+        $type = $schema->properties['type']->enum[0] ?? null;
+
+        if (! is_string($type)) {
+            return;
+        }
+
+        $typeAttributeClass = $this->foundationClass('JsonApi\\Attributes\\JsonApiType');
+        $namespace->addUse($typeAttributeClass);
+        $classType->addAttribute($typeAttributeClass, [$type]);
     }
 
     protected function addRelationshipProperties(ClassType $classType, PhpNamespace $namespace, Schema $schema): void

@@ -101,8 +101,12 @@ class MutationRequestTestGenerator
 
     protected function generateDtoInstantiation(Endpoint $endpoint): string
     {
-        $dtoClassName = $this->getDtoClassName($endpoint);
+        $dtoClassName = $this->getBodyDtoClassName($endpoint);
         $stateArray = $this->generateFactoryStateArray($endpoint);
+
+        if ($stateArray === '') {
+            return "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::testFactory()->make();";
+        }
 
         $lines = [];
         $lines[] = "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::testFactory()->state([";
@@ -130,10 +134,6 @@ class MutationRequestTestGenerator
             }
         }
 
-        if (empty($lines)) {
-            return "        'name' => 'test value',";
-        }
-
         return implode("\n", $lines);
     }
 
@@ -144,7 +144,7 @@ class MutationRequestTestGenerator
      */
     protected function getFilteredPropertiesForTest(Endpoint $endpoint): array
     {
-        $dtoClassName = $this->getDtoClassName($endpoint);
+        $dtoClassName = $this->getBodyDtoClassName($endpoint);
         $properties = $this->getDtoPropertiesFromGeneratedCode($dtoClassName);
 
         $filtered = [];
@@ -175,7 +175,7 @@ class MutationRequestTestGenerator
 
     protected function generateBodyValidation(Endpoint $endpoint): string
     {
-        $resourceType = $this->getResourceTypeFromEndpoint($endpoint);
+        $resourceType = $this->getBodyResourceType($endpoint);
 
         $attributeValidations = $this->generateAttributeValidationsFromDto($endpoint);
 
@@ -220,5 +220,17 @@ class MutationRequestTestGenerator
         }
 
         return implode("\n", $lines);
+    }
+
+    protected function getBodyDtoClassName(Endpoint $endpoint): string
+    {
+        return $this->dtoResolver->resolveRequestBodyDtoClassName($endpoint) ?? $this->getDtoClassName($endpoint);
+    }
+
+    protected function getBodyResourceType(Endpoint $endpoint): string
+    {
+        $schema = $this->specification->components->schemas[$this->getBodyDtoClassName($endpoint)] ?? null;
+
+        return $schema?->properties['data']?->properties['type']?->enum[0] ?? $this->getResourceTypeFromEndpoint($endpoint);
     }
 }

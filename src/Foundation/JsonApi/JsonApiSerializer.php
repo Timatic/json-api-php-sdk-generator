@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use ReflectionClass;
 use Spatie\LaravelData\Data;
 use Timatic\JsonApiSdk\Foundation\JsonApi\Attributes\JsonApiRelationship;
+use Timatic\JsonApiSdk\Foundation\JsonApi\Attributes\JsonApiType;
 
 class JsonApiSerializer
 {
@@ -23,9 +24,9 @@ class JsonApiSerializer
     {
         $reflection = new ReflectionClass($data);
 
-        $result = ['type' => static::deriveType($reflection->getShortName())];
+        $result = ['type' => self::resourceType($reflection)];
 
-        $id = static::getProperty($data, 'id');
+        $id = self::getProperty($data, 'id');
         if ($id !== null) {
             $result['id'] = $id;
         }
@@ -46,13 +47,13 @@ class JsonApiSerializer
                 $relationAttrs = $param->getAttributes(JsonApiRelationship::class);
 
                 if (! empty($relationAttrs)) {
-                    $resolved = static::resolveRelationship($data, $name, $relationAttrs[0]->newInstance());
+                    $resolved = self::resolveRelationship($data, $name, $relationAttrs[0]->newInstance());
 
                     if ($resolved !== null) {
                         $relationships[$name] = $resolved;
                     }
                 } else {
-                    $value = static::getProperty($data, $name);
+                    $value = self::getProperty($data, $name);
 
                     if ($value !== null) {
                         $attributes[$name] = $value instanceof Carbon ? $value->toIso8601String() : $value;
@@ -72,7 +73,7 @@ class JsonApiSerializer
 
     private static function resolveRelationship(Data $data, string $name, JsonApiRelationship $attr): ?array
     {
-        $value = static::getProperty($data, $name);
+        $value = self::getProperty($data, $name);
 
         if ($value === null) {
             return null;
@@ -80,12 +81,12 @@ class JsonApiSerializer
 
         if ($attr->type === RelationType::Many && $value instanceof Collection) {
             return [
-                'data' => $value->map(fn (Data $item) => static::resourceIdentifier($item))->values()->all(),
+                'data' => $value->map(fn (Data $item) => self::resourceIdentifier($item))->values()->all(),
             ];
         }
 
         if ($attr->type === RelationType::One && $value instanceof Data) {
-            return ['data' => static::resourceIdentifier($value)];
+            return ['data' => self::resourceIdentifier($value)];
         }
 
         return null;
@@ -94,14 +95,20 @@ class JsonApiSerializer
     private static function resourceIdentifier(Data $item): array
     {
         return [
-            'type' => static::deriveType((new ReflectionClass($item))->getShortName()),
-            'id' => static::getProperty($item, 'id'),
+            'type' => self::resourceType(new ReflectionClass($item)),
+            'id' => self::getProperty($item, 'id'),
         ];
     }
 
-    private static function deriveType(string $shortName): string
+    /**
+     * @param  ReflectionClass<Data>  $reflection
+     */
+    private static function resourceType(ReflectionClass $reflection): string
     {
-        return Str::of($shortName)->camel()->plural()->toString();
+        $attribute = $reflection->getAttributes(JsonApiType::class)[0] ?? null;
+
+        return $attribute?->newInstance()->type
+            ?? Str::of($reflection->getShortName())->camel()->plural()->toString();
     }
 
     private static function getProperty(object $object, string $name): mixed
