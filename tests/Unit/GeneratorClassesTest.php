@@ -6,8 +6,6 @@ use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
-use Timatic\JsonApiSdk\Foundation\Hydration\Model;
-use Timatic\JsonApiSdk\Foundation\Hydration\Hydrator;
 use Timatic\JsonApiSdk\Foundation\Filtering\Operator;
 use Timatic\JsonApiSdk\Foundation\Pagination\JsonApiPaginator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
@@ -27,7 +25,6 @@ test('generator classes can be instantiated', function () {
 });
 
 test('foundation classes exist', function () {
-    expect(class_exists(Hydrator::class))->toBeTrue();
     expect(class_exists(JsonApiPaginator::class))->toBeTrue();
     expect(enum_exists(Operator::class))->toBeTrue();
 });

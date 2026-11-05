@@ -18,7 +18,7 @@ use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
 use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
-use Timatic\JsonApiSdk\Services\ComposerSetup;
+use Crescat\SaloonSdkGenerator\Services\ComposerSetup;
 use Crescat\SaloonSdkGenerator\Services\ConfigValuesService;
 use Timatic\JsonApiSdk\Services\FoundationCopier;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -208,7 +208,7 @@ class GenerateCommand extends Command
         $postProcessors = [];
 
         if ($generateTests) {
-            $postProcessors[] = new JsonApiPestTestGenerator(generateTestSetup: false);
+            $postProcessors[] = new JsonApiPestTestGenerator();
             $postProcessors[] = new JsonApiFactoryGenerator();
         }
 
