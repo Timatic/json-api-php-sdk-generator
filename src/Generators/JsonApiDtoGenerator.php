@@ -90,6 +90,12 @@ class JsonApiDtoGenerator extends DtoGenerator
         $classType->addAttribute($typeAttributeClass, [$type]);
     }
 
+    protected function mapType($type, $format = null): string
+    {
+        // Spatie Data hydrates JSON objects as arrays
+        return $type === 'object' ? 'array' : parent::mapType($type, $format);
+    }
+
     protected function addRelationshipProperties(ClassType $classType, PhpNamespace $namespace, Schema $schema): void
     {
         if (! isset($schema->properties['relationships'])) {
