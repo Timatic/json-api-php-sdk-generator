@@ -88,10 +88,9 @@ class JsonApiRequestGenerator extends RequestGenerator
         $dtoType = $this->getRequestBodyDtoType($endpoint);
 
         $namespace->addUse($dtoType);
-        $typeHint = '\\'.$dtoType;
 
         $dataParam = new Parameter(
-            type: $typeHint,
+            type: '\\'.$dtoType,
             nullable: true,
             name: 'data',
             description: 'Request data',
