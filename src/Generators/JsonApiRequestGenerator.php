@@ -181,7 +181,7 @@ class JsonApiRequestGenerator extends RequestGenerator
 
         $namespace->addUse($transformerClass);
         $namespace->addUse(Response::class);
-        $namespace->addUse("{$this->config->namespace}\\Dto\\{$dtoClassName}");
+        $namespace->addUse("{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}\\{$dtoClassName}");
 
         $method = $classType->addMethod('createDtoFromResponse')
             ->setReturnType('mixed');
@@ -246,7 +246,7 @@ class JsonApiRequestGenerator extends RequestGenerator
         $writeDtoClassName = $this->getWriteDtoClassName($endpoint);
 
         if ($writeDtoClassName) {
-            return $this->config->namespace.'\\Dto\\'.$writeDtoClassName;
+            return "{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}\\{$writeDtoClassName}";
         }
 
         $schemaName = $endpoint->requestBodySchema;
@@ -259,6 +259,6 @@ class JsonApiRequestGenerator extends RequestGenerator
             return $fallback;
         }
 
-        return $this->config->namespace.'\\Dto\\'.$schemaName;
+        return "{$this->config->namespace}\\{$this->config->dtoNamespaceSuffix}\\{$schemaName}";
     }
 }

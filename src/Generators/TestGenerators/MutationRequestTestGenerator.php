@@ -46,7 +46,7 @@ class MutationRequestTestGenerator
 
     public function getRequestBodyDtoClassName(Endpoint $endpoint): ?string
     {
-        return "{$this->namespace}\\Dto\\{$this->getBodyDtoClassName($endpoint)}";
+        return "{$this->namespace}\\DataTransferObjects\\{$this->getBodyDtoClassName($endpoint)}";
     }
 
     public function getStubPath(): string
@@ -105,11 +105,11 @@ class MutationRequestTestGenerator
         $stateArray = $this->generateFactoryStateArray($endpoint);
 
         if ($stateArray === '') {
-            return "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::testFactory()->make();";
+            return "    \$dto = \\{$this->namespace}\\DataTransferObjects\\{$dtoClassName}::testFactory()->make();";
         }
 
         $lines = [];
-        $lines[] = "    \$dto = \\{$this->namespace}\\Dto\\{$dtoClassName}::testFactory()->state([";
+        $lines[] = "    \$dto = \\{$this->namespace}\\DataTransferObjects\\{$dtoClassName}::testFactory()->state([";
         $lines[] = $stateArray;
         $lines[] = '    ])->make();';
 

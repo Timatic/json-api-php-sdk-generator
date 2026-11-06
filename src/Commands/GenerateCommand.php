@@ -181,7 +181,7 @@ class GenerateCommand extends Command
             namespace: $namespace,
             resourceNamespaceSuffix: 'Resources',
             requestNamespaceSuffix: 'Requests',
-            dtoNamespaceSuffix: 'Dto',
+            dtoNamespaceSuffix: 'DataTransferObjects',
             extra: [
                 'excludePut' => $excludePut,
             ],
@@ -295,7 +295,7 @@ class GenerateCommand extends Command
         }
 
         foreach ($result->dtoClasses ?? [] as $name => $file) {
-            $files[] = "{$outputDir}/src/Dto/{$name}.php";
+            $files[] = "{$outputDir}/src/DataTransferObjects/{$name}.php";
         }
 
         foreach ($result->requestClasses ?? [] as $name => $file) {
@@ -348,7 +348,7 @@ class GenerateCommand extends Command
         // Write DTOs
         foreach ($result->dtoClasses ?? [] as $file) {
             $className = $this->getClassNameFromPhpFile($file);
-            $path = "{$outputDir}/src/Dto/{$className}.php";
+            $path = "{$outputDir}/src/DataTransferObjects/{$className}.php";
             if ($this->writeFile($path, (string) $file, $force)) {
                 $written++;
             } else {

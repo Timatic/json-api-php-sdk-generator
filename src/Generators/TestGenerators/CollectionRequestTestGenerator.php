@@ -363,7 +363,7 @@ class CollectionRequestTestGenerator
             if ($isMany) {
                 $assertions[] = "->{$propertyName}->not->toBeNull()";
             } else {
-                $assertions[] = "->{$propertyName}->toBeInstanceOf(\\{$this->namespace}\\Dto\\{$relatedModel}::class)";
+                $assertions[] = "->{$propertyName}->toBeInstanceOf(\\{$this->namespace}\\DataTransferObjects\\{$relatedModel}::class)";
             }
         }
 
