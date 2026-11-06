@@ -31,4 +31,16 @@ trait DtoHelperTrait
 
         return Str::singular(NameHelper::safeClassName($name));
     }
+
+    /**
+     * Named per action, as one request schema can be shared by store and update.
+     */
+    protected function getWriteDtoClassName(Endpoint $endpoint): ?string
+    {
+        if (! str_ends_with($endpoint->requestBodySchema ?? '', 'Request')) {
+            return null;
+        }
+
+        return ($endpoint->method->isPost() ? 'New' : 'Update').$this->getDtoClassName($endpoint);
+    }
 }

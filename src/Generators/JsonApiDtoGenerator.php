@@ -15,9 +15,12 @@ use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\PhpFile;
 use Nette\PhpGenerator\PhpNamespace;
+use Timatic\JsonApiSdk\Generators\TestGenerators\Traits\DtoHelperTrait;
 
 class JsonApiDtoGenerator extends DtoGenerator
 {
+    use DtoHelperTrait;
+
     protected function foundationClass(string $relativePath): string
     {
         return $this->config->namespace.'\\Foundation\\'.$relativePath;
@@ -27,12 +30,24 @@ class JsonApiDtoGenerator extends DtoGenerator
     {
         $this->factoryTraitClass = $this->foundationClass('JsonApi\\HasTestFactory');
 
-        return parent::generate($specification);
+        parent::generate($specification);
+
+        foreach ($specification->endpoints as $endpoint) {
+            $className = $this->getWriteDtoClassName($endpoint);
+            $schema = $specification->components->schemas[$endpoint->requestBodySchema] ?? null;
+
+            if ($className && $schema instanceof Schema) {
+                $this->generateDtoClass($className, $schema);
+            }
+        }
+
+        return $this->generated;
     }
 
     protected function shouldIncludeSchema(string $className, Schema $schema): bool
     {
-        return ! str_ends_with($className, 'Identifier');
+        return ! str_ends_with($className, 'Identifier')
+            && ! str_ends_with($className, 'Request');
     }
 
     protected function extractProperties(Schema $schema): array

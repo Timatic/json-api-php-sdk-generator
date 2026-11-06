@@ -243,6 +243,12 @@ class JsonApiRequestGenerator extends RequestGenerator
             return $fallback;
         }
 
+        $writeDtoClassName = $this->getWriteDtoClassName($endpoint);
+
+        if ($writeDtoClassName) {
+            return $this->config->namespace.'\\Dto\\'.$writeDtoClassName;
+        }
+
         $schemaName = $endpoint->requestBodySchema;
 
         if (! isset($this->specification->components->schemas[$schemaName])) {

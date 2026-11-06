@@ -46,7 +46,7 @@ class MutationRequestTestGenerator
 
     public function getRequestBodyDtoClassName(Endpoint $endpoint): ?string
     {
-        return $this->dtoResolver->resolveRequestBodyDtoFqn($endpoint);
+        return "{$this->namespace}\\Dto\\{$this->getBodyDtoClassName($endpoint)}";
     }
 
     public function getStubPath(): string
@@ -224,12 +224,14 @@ class MutationRequestTestGenerator
 
     protected function getBodyDtoClassName(Endpoint $endpoint): string
     {
-        return $this->dtoResolver->resolveRequestBodyDtoClassName($endpoint) ?? $this->getDtoClassName($endpoint);
+        return $this->getWriteDtoClassName($endpoint)
+            ?? $this->dtoResolver->resolveRequestBodyDtoClassName($endpoint)
+            ?? $this->getDtoClassName($endpoint);
     }
 
     protected function getBodyResourceType(Endpoint $endpoint): string
     {
-        $schema = $this->specification->components->schemas[$this->getBodyDtoClassName($endpoint)] ?? null;
+        $schema = $this->specification->components->schemas[$endpoint->requestBodySchema] ?? null;
 
         return $schema?->properties['data']?->properties['type']?->enum[0] ?? $this->getResourceTypeFromEndpoint($endpoint);
     }
