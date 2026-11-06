@@ -11,7 +11,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
 
-    name: Coverage (PHP 8.4 - Laravel 12)
+    name: Coverage (PHP 8.4)
 
     steps:
       - name: Checkout code
@@ -31,8 +31,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer remove "crescat-io/saloon-sdk-generator" "larastan/larastan" "laravel/boost" "laravel/pint" --dev --no-interaction
-          composer require "laravel/framework:12.*" "saloonphp/laravel-plugin" --no-interaction --no-update
+          # The path repository only exists locally, so CI installs saloon-sdk-generator from GitHub
+          composer config repositories.saloon-sdk-generator vcs https://github.com/Timatic/saloon-sdk-generator
           composer update --prefer-dist --no-interaction
 
       - name: Run tests with coverage

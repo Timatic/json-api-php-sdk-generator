@@ -5,6 +5,7 @@
     "license": "MIT",
     "repositories": [
         {
+            "name": "saloon-sdk-generator",
             "type": "path",
             "url": "../saloon-sdk-generator"
         }

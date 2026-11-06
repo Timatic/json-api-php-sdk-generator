@@ -25,7 +25,10 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction
+        run: |
+          # The path repository only exists locally, so CI installs saloon-sdk-generator from GitHub
+          composer config repositories.saloon-sdk-generator vcs https://github.com/Timatic/saloon-sdk-generator
+          composer update --prefer-dist --no-interaction
 
       - name: Run Laravel Pint
         run: ./vendor/bin/pint --test
