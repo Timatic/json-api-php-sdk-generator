@@ -18,7 +18,8 @@ Options:
       --skip-tests                     Skip generating Pest tests
       --skip-factories                 Skip generating Faker factories
       --dry-run                        Show what would be generated without writing files
-      --force                          Overwrite existing files
+      --force                          Overwrite existing files and remove previously generated
+                                       Requests, DTOs, Factories and tests
 ```
 
 When you run the command for the first time, you should add the `--foundation` flag.

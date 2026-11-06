@@ -6,7 +6,6 @@ namespace Timatic\JsonApiSdk\Commands;
 
 use Crescat\SaloonSdkGenerator\CodeGenerator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
-use Crescat\SaloonSdkGenerator\Data\TaggedOutputFile;
 use Crescat\SaloonSdkGenerator\Parsers\OpenApiParser;
 use Crescat\SaloonSdkGenerator\Generators\ConfigPostProcessor;
 use Crescat\SaloonSdkGenerator\Generators\ServiceProviderPostProcessor;
@@ -21,6 +20,7 @@ use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
 use Crescat\SaloonSdkGenerator\Services\ComposerSetup;
 use Crescat\SaloonSdkGenerator\Services\ConfigValuesService;
 use Timatic\JsonApiSdk\Services\FoundationCopier;
+use Timatic\JsonApiSdk\Services\GeneratedFileWriter;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -92,7 +92,7 @@ class GenerateCommand extends Command
                 'force',
                 null,
                 InputOption::VALUE_NONE,
-                'Overwrite existing files'
+                'Overwrite existing files and remove previously generated Requests, DTOs, Factories and tests'
             )
             ->addOption(
                 'exclude-put-requests',
@@ -238,19 +238,46 @@ class GenerateCommand extends Command
             return Command::FAILURE;
         }
 
-        // Write files
+        $writer = new GeneratedFileWriter($config, $outputDir);
+        $files = $writer->files($result, includeConnector: $generateFoundation);
+
         if ($dryRun) {
             $this->io->section('Dry Run - Files that would be generated:');
-            $this->listGeneratedFiles($this->io, $result, $outputDir, $configKey);
-        } else {
-            $this->io->section('Writing Files');
-            $this->writeGeneratedFiles($this->io, $result, $outputDir, $force, $namespace, $generateFoundation, $dryRun, $composerSetup);
+            $this->io->listing(array_keys($files));
+            $this->io->note('Total: '.count($files).' files');
 
-            // Run Pint to format generated files
-            (new PintRunner())->run($outputDir, $output);
-
-            $this->io->success("SDK generated successfully in {$outputDir}");
+            return Command::SUCCESS;
         }
+
+        if ($generateFoundation) {
+            $this->io->section('Copying Foundation');
+            $this->io->text('Copied: '.(new FoundationCopier)->copy($outputDir, $namespace).' files');
+
+            $this->io->section('Composer setup');
+            $composerSetup->setup($namespace, $this->io, false, $connectorName);
+        }
+
+        $this->io->section('Writing Files');
+
+        if ($force) {
+            $writer->removeGeneratedDirectories();
+        }
+
+        $written = $writer->write($files, $force);
+
+        if ($output->isVerbose()) {
+            $this->io->listing($written);
+        }
+
+        $this->io->text('Written: '.count($written).' files');
+        $skipped = count($files) - count($written);
+        if ($skipped > 0) {
+            $this->io->text("Skipped: {$skipped} files (already exist, use --force to overwrite)");
+        }
+
+        (new PintRunner())->run($outputDir, $output);
+
+        $this->io->success("SDK generated successfully in {$outputDir}");
 
         return Command::SUCCESS;
     }
@@ -281,164 +308,4 @@ class GenerateCommand extends Command
 
         return $tempFile;
     }
-
-    private function listGeneratedFiles(SymfonyStyle $io, $result, string $outputDir, string $configKey): void
-    {
-        $files = [];
-
-        // Config file
-        $files[] = "{$outputDir}/config/{$configKey}.php";
-
-        // Collect all generated files
-        foreach ($result->connectorClass ?? [] as $name => $file) {
-            $files[] = "{$outputDir}/src/{$name}.php";
-        }
-
-        foreach ($result->dtoClasses ?? [] as $name => $file) {
-            $files[] = "{$outputDir}/src/DataTransferObjects/{$name}.php";
-        }
-
-        foreach ($result->requestClasses ?? [] as $name => $file) {
-            $files[] = "{$outputDir}/src/Requests/{$name}.php";
-        }
-
-        // Additional files (e.g., factories/tests) with explicit paths
-        foreach ($result->additionalFiles ?? [] as $file) {
-            if ($file instanceof TaggedOutputFile) {
-                $files[] = rtrim($outputDir, '/').'/'.ltrim($file->path, '/');
-            }
-        }
-
-        $io->listing($files);
-        $io->note("Total: " . count($files) . " files");
-    }
-
-    private function writeGeneratedFiles(
-        SymfonyStyle $io,
-        $result,
-        string $outputDir,
-        bool $force,
-        string $namespace,
-        bool $generateFoundation,
-        bool $dryRun,
-        ComposerSetup $composerSetup
-    ): void {
-        $written = 0;
-        $skipped = 0;
-
-        if ($generateFoundation) {
-            $foundationCopier = new FoundationCopier();
-            $written += $foundationCopier->copy($outputDir, $namespace);
-
-            $io->section('Composer setup');
-            $composerSetup->setup($namespace, $io, $dryRun, $result->connectorClass ? $this->getClassNameFromPhpFile($result->connectorClass) : null);
-
-            // Write connector
-            if ($result->connectorClass !== null) {
-                $className = $this->getClassNameFromPhpFile($result->connectorClass);
-                $path = "{$outputDir}/src/{$className}.php";
-                if ($this->writeFile($path, (string) $result->connectorClass, $force)) {
-                    $written++;
-                } else {
-                    $skipped++;
-                }
-            }
-        }
-
-        // Write DTOs
-        foreach ($result->dtoClasses ?? [] as $file) {
-            $className = $this->getClassNameFromPhpFile($file);
-            $path = "{$outputDir}/src/DataTransferObjects/{$className}.php";
-            if ($this->writeFile($path, (string) $file, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        // Write Requests - extract namespace suffix for subdirectory
-        foreach ($result->requestClasses ?? [] as $file) {
-            $className = $this->getClassNameFromPhpFile($file);
-            $subDir = $this->getRequestSubdirectory($file);
-            $path = "{$outputDir}/src/Requests/{$subDir}/{$className}.php";
-            if ($this->writeFile($path, (string) $file, $force)) {
-                $written++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        // Write additional files (tests, factories, etc.) from post-processors
-        foreach ($result->additionalFiles ?? [] as $file) {
-            if ($file instanceof TaggedOutputFile) {
-                // Respect provided relative path for factories
-                $path = rtrim($outputDir, '/').'/'.ltrim($file->path, '/');
-                $content = is_string($file->file) ? $file->file : (string) $file->file;
-                if ($this->writeFile($path, $content, $force)) {
-                    $written++;
-                } else {
-                    $skipped++;
-                }
-                continue;
-            }
-
-            if ($file instanceof \Nette\PhpGenerator\PhpFile) {
-                // Default PhpFile additional files go into tests directory (backwards compatible)
-                $className = $this->getClassNameFromPhpFile($file);
-                $path = "{$outputDir}/tests/{$className}.php";
-                if ($this->writeFile($path, (string) $file, $force)) {
-                    $written++;
-                } else {
-                    $skipped++;
-                }
-            }
-        }
-
-        $io->text("Written: {$written} files");
-        if ($skipped > 0) {
-            $io->text("Skipped: {$skipped} files (already exist, use --force to overwrite)");
-        }
-    }
-
-    /**
-     * Extract the class name from a PhpFile
-     */
-    private function getClassNameFromPhpFile(\Nette\PhpGenerator\PhpFile $file): string
-    {
-        foreach ($file->getNamespaces() as $namespace) {
-            foreach ($namespace->getClasses() as $class) {
-                return $class->getName();
-            }
-        }
-        throw new \RuntimeException('No class found in PhpFile');
-    }
-
-    /**
-     * Extract subdirectory name from request namespace (e.g., "Articles" from "Sample\Sdk\Requests\Articles")
-     */
-    private function getRequestSubdirectory(\Nette\PhpGenerator\PhpFile $file): string
-    {
-        foreach ($file->getNamespaces() as $namespace) {
-            $parts = explode('\\', $namespace->getName());
-            // Return the last part (e.g., "Articles" from "Sample\Sdk\Requests\Articles")
-            return end($parts);
-        }
-        return 'Misc';
-    }
-
-    private function writeFile(string $path, string $content, bool $force): bool
-    {
-        if (file_exists($path) && !$force) {
-            return false;
-        }
-
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        file_put_contents($path, $content);
-        return true;
-    }
-
 }
