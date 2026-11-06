@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Timatic\JsonApiSdk\Services;
 
 /**
- * Copies Foundation classes to the generated SDK output directory
+ * Copies the Foundation classes and their tests to the generated SDK output directory
  * and rewrites namespaces to match the target SDK namespace.
  */
 class FoundationCopier
 {
-    private string $sourceDir;
+    private const SOURCE_NAMESPACE = 'Timatic\\JsonApiSdk\\';
 
-    public function __construct()
-    {
-        $this->sourceDir = dirname(__DIR__).'/Foundation';
-    }
+    /**
+     * Directories of this package that are copied to the same path in the SDK.
+     */
+    private const DIRECTORIES = ['src/Foundation', 'tests/Foundation'];
 
     /**
      * Copy all Foundation files to the output directory with rewritten namespaces.
@@ -27,17 +27,17 @@ class FoundationCopier
     public function copy(string $outputDir, string $targetNamespace): int
     {
         $copied = 0;
-        $files = $this->getFoundationFiles();
 
-        foreach ($files as $sourceFile) {
-            $relativePath = $this->getRelativePath($sourceFile);
-            $targetFile = "{$outputDir}/src/Foundation/{$relativePath}";
+        foreach (self::DIRECTORIES as $directory) {
+            $sourceDir = dirname(__DIR__, 2).'/'.$directory;
 
-            $content = file_get_contents($sourceFile);
-            $content = $this->rewriteNamespace($content, $targetNamespace);
+            foreach ($this->getPhpFiles($sourceDir) as $sourceFile) {
+                $targetFile = "{$outputDir}/{$directory}/".str_replace($sourceDir.'/', '', $sourceFile);
+                $content = str_replace(self::SOURCE_NAMESPACE, rtrim($targetNamespace, '\\').'\\', file_get_contents($sourceFile));
 
-            $this->writeFile($targetFile, $content);
-            $copied++;
+                $this->writeFile($targetFile, $content);
+                $copied++;
+            }
         }
 
         return $copied;
@@ -46,11 +46,11 @@ class FoundationCopier
     /**
      * @return array<string>
      */
-    private function getFoundationFiles(): array
+    private function getPhpFiles(string $directory): array
     {
         $files = [];
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->sourceDir)
+            new \RecursiveDirectoryIterator($directory)
         );
 
         foreach ($iterator as $file) {
@@ -62,34 +62,6 @@ class FoundationCopier
         }
 
         return $files;
-    }
-
-    private function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->sourceDir.'/', '', $filePath);
-    }
-
-    private function rewriteNamespace(string $content, string $targetNamespace): string
-    {
-        $content = str_replace(
-            'namespace Timatic\JsonApiSdk\\Foundation',
-            "namespace {$targetNamespace}\\Foundation",
-            $content
-        );
-
-        $content = str_replace(
-            'use Timatic\JsonApiSdk\\Foundation\\',
-            "use {$targetNamespace}\\Foundation\\",
-            $content
-        );
-
-        $content = str_replace(
-            '\\Timatic\JsonApiSdk\\Foundation\\',
-            "\\{$targetNamespace}\\Foundation\\",
-            $content
-        );
-
-        return $content;
     }
 
     private function writeFile(string $path, string $content): void

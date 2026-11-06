@@ -2,11 +2,17 @@
 
 namespace Timatic\JsonApiSdk\Tests;
 
-use PHPUnit\Framework\TestCase as BaseTestCase;
+use Orchestra\Testbench\TestCase as Orchestra;
+use Saloon\Laravel\SaloonServiceProvider;
+use Spatie\LaravelData\LaravelDataServiceProvider;
 
-class TestCase extends BaseTestCase
+class TestCase extends Orchestra
 {
-    // Basic test case for generator package
-    // The copied tests from timatic-php-sdk require Laravel Testbench
-    // and are specific to the generated SDK, not the generator itself
+    protected function getPackageProviders($app): array
+    {
+        return [
+            SaloonServiceProvider::class,
+            LaravelDataServiceProvider::class,
+        ];
+    }
 }

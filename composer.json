@@ -29,7 +29,8 @@
     "require-dev": {
         "pestphp/pest": "^3.0",
         "fakerphp/faker": "^1.23",
-        "phpstan/phpstan": "^2.1"
+        "phpstan/phpstan": "^2.1",
+        "orchestra/testbench": "^11.0"
     },
 
     "bin": ["bin/jsonapi-sdk"],
