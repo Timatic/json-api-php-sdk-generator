@@ -156,11 +156,11 @@ class MutationRequestTestGenerator
             if (in_array($propName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
                 continue;
             }
-            
+
             if (! in_array($propType, ['string', 'int', 'float', 'bool', 'null'])) {
                 continue;
             }
-                
+
             $isDateTime = $propType && str_contains($propType, 'Carbon');
 
             $filtered[] = [

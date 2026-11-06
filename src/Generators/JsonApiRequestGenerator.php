@@ -120,7 +120,7 @@ class JsonApiRequestGenerator extends RequestGenerator
         return true;
     }
 
-    protected function generateDefaultQueryMethod(\Nette\PhpGenerator\ClassType $classType, $namespace, array $queryParams, Endpoint $endpoint): void
+    protected function generateDefaultQueryMethod(ClassType $classType, $namespace, array $queryParams, Endpoint $endpoint): void
     {
         if (! empty($queryParams)) {
             parent::generateDefaultQueryMethod($classType, $namespace, $queryParams, $endpoint);

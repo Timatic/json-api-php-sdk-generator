@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Timatic\JsonApiSdk;
 
-use Timatic\JsonApiSdk\Commands\GenerateCommand;
 use Symfony\Component\Console\Application as BaseApplication;
+use Timatic\JsonApiSdk\Commands\GenerateCommand;
 
 class Application extends BaseApplication
 {
@@ -13,6 +13,6 @@ class Application extends BaseApplication
     {
         parent::__construct('JSON:API SDK Generator', '1.0.0');
 
-        $this->add(new GenerateCommand());
+        $this->add(new GenerateCommand);
     }
 }

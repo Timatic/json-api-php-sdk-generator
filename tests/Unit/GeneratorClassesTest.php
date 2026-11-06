@@ -1,14 +1,14 @@
 <?php
 
-use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
+use Crescat\SaloonSdkGenerator\Data\Generator\Config;
 use Timatic\JsonApiSdk\Foundation\Filtering\Operator;
 use Timatic\JsonApiSdk\Foundation\Pagination\JsonApiPaginator;
-use Crescat\SaloonSdkGenerator\Data\Generator\Config;
+use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
 
 test('generator classes can be instantiated', function () {
     $config = new Config(
@@ -21,7 +21,7 @@ test('generator classes can be instantiated', function () {
     expect(new JsonApiConnectorGenerator($config))->toBeInstanceOf(JsonApiConnectorGenerator::class);
     expect(new JsonApiResourceGenerator($config))->toBeInstanceOf(JsonApiResourceGenerator::class);
     expect(new JsonApiFactoryGenerator($config))->toBeInstanceOf(JsonApiFactoryGenerator::class);
-    expect(new JsonApiPestTestGenerator())->toBeInstanceOf(JsonApiPestTestGenerator::class);
+    expect(new JsonApiPestTestGenerator)->toBeInstanceOf(JsonApiPestTestGenerator::class);
 });
 
 test('foundation classes exist', function () {

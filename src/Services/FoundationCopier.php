@@ -20,8 +20,8 @@ class FoundationCopier
     /**
      * Copy all Foundation files to the output directory with rewritten namespaces.
      *
-     * @param string $outputDir The output directory for the SDK
-     * @param string $targetNamespace The target namespace (e.g., "Sample\Sdk")
+     * @param  string  $outputDir  The output directory for the SDK
+     * @param  string  $targetNamespace  The target namespace (e.g., "Sample\Sdk")
      * @return int Number of files copied
      */
     public function copy(string $outputDir, string $targetNamespace): int

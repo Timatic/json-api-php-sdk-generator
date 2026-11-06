@@ -8,7 +8,9 @@ use Crescat\SaloonSdkGenerator\Data\Generator\Endpoint;
 use Crescat\SaloonSdkGenerator\Data\Generator\Parameter;
 use Crescat\SaloonSdkGenerator\Generators\ResourceGenerator;
 use Crescat\SaloonSdkGenerator\Helpers\NameHelper;
+use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\Method;
+use Spatie\LaravelData\Data;
 
 class JsonApiResourceGenerator extends ResourceGenerator
 {
@@ -49,7 +51,7 @@ class JsonApiResourceGenerator extends ResourceGenerator
             ? substr($requestClassName, 0, -7)
             : $requestClassName;
 
-        return \Crescat\SaloonSdkGenerator\Helpers\NameHelper::safeVariableName($methodBaseName);
+        return NameHelper::safeVariableName($methodBaseName);
     }
 
     protected function getResourceParameterName(Parameter $parameter, bool $isPathParam): string
@@ -61,13 +63,13 @@ class JsonApiResourceGenerator extends ResourceGenerator
         return $parameter->name;
     }
 
-    protected function customizeResourceMethod(\Nette\PhpGenerator\Method $method, $namespace, array &$args, Endpoint $endpoint): void
+    protected function customizeResourceMethod(Method $method, $namespace, array &$args, Endpoint $endpoint): void
     {
         if (! ($endpoint->method->isPost() || $endpoint->method->isPatch())) {
             return;
         }
 
-        $dataClass = \Spatie\LaravelData\Data::class;
+        $dataClass = Data::class;
         $namespace->addUse($dataClass);
 
         $dataParam = new Parameter(
@@ -78,7 +80,7 @@ class JsonApiResourceGenerator extends ResourceGenerator
         );
 
         $this->addPropertyToMethod($method, $dataParam);
-        $args[] = new \Nette\PhpGenerator\Literal('$data');
+        $args[] = new Literal('$data');
     }
 
     protected function addPropertyToMethod(Method $method, Parameter $parameter): Method

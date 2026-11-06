@@ -6,21 +6,13 @@ namespace Timatic\JsonApiSdk\Commands;
 
 use Crescat\SaloonSdkGenerator\CodeGenerator;
 use Crescat\SaloonSdkGenerator\Data\Generator\Config;
-use Crescat\SaloonSdkGenerator\Parsers\OpenApiParser;
 use Crescat\SaloonSdkGenerator\Generators\ConfigPostProcessor;
 use Crescat\SaloonSdkGenerator\Generators\ServiceProviderPostProcessor;
 use Crescat\SaloonSdkGenerator\Generators\TestSetupPostProcessor;
-use Crescat\SaloonSdkGenerator\Services\PintRunner;
-use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
-use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
+use Crescat\SaloonSdkGenerator\Parsers\OpenApiParser;
 use Crescat\SaloonSdkGenerator\Services\ComposerSetup;
 use Crescat\SaloonSdkGenerator\Services\ConfigValuesService;
-use Timatic\JsonApiSdk\Services\FoundationCopier;
-use Timatic\JsonApiSdk\Services\GeneratedFileWriter;
+use Crescat\SaloonSdkGenerator\Services\PintRunner;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -28,6 +20,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Timatic\JsonApiSdk\Generators\JsonApiConnectorGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiDtoGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiFactoryGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiPestTestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiRequestGenerator;
+use Timatic\JsonApiSdk\Generators\JsonApiResourceGenerator;
+use Timatic\JsonApiSdk\Services\FoundationCopier;
+use Timatic\JsonApiSdk\Services\GeneratedFileWriter;
 
 #[AsCommand(
     name: 'generate',
@@ -99,8 +99,7 @@ class GenerateCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Exclude PUT requests from generated SDK (default: PUT requests are included)'
-            )
-;
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -116,10 +115,11 @@ class GenerateCommand extends Command
             $namespace = $composerSetup->getNamespace();
         } catch (\RuntimeException $e) {
             $this->io->error($e->getMessage());
+
             return Command::FAILURE;
         }
-        $generateTests = !$input->getOption('skip-tests');
-        $generateFactories = !$input->getOption('skip-factories');
+        $generateTests = ! $input->getOption('skip-tests');
+        $generateFactories = ! $input->getOption('skip-factories');
         $dryRun = $input->getOption('dry-run');
         $force = $input->getOption('force');
 
@@ -131,6 +131,7 @@ class GenerateCommand extends Command
         // Validate required options when --foundation is used
         if ($generateFoundation && $connectorNameOption === null) {
             $this->io->error('The --connector-name option is required when using --foundation');
+
             return Command::FAILURE;
         }
 
@@ -146,6 +147,7 @@ class GenerateCommand extends Command
 
             if ($configValues === null) {
                 $this->io->error('No existing SDK found in output directory. Use --foundation to generate a new SDK.');
+
                 return Command::FAILURE;
             }
 
@@ -158,8 +160,9 @@ class GenerateCommand extends Command
         $this->io->title('JSON:API SDK Generator');
 
         // Validate spec file
-        if (!$this->isUrl($specPath) && !file_exists($specPath)) {
+        if (! $this->isUrl($specPath) && ! file_exists($specPath)) {
             $this->io->error("Specification file not found: {$specPath}");
+
             return Command::FAILURE;
         }
 
@@ -170,10 +173,10 @@ class GenerateCommand extends Command
             "Namespace (from composer.json): {$namespace}",
             "Connector: {$connectorName}",
             "Config key: {$configKey}",
-            "Tests: " . ($generateTests ? 'Yes' : 'No'),
-            "Factories: " . ($generateFactories ? 'Yes' : 'No'),
-            "Foundation: " . ($generateFoundation ? 'Yes' : 'No'),
-            "Exclude PUT: " . ($excludePut ? 'Yes' : 'No'),
+            'Tests: '.($generateTests ? 'Yes' : 'No'),
+            'Factories: '.($generateFactories ? 'Yes' : 'No'),
+            'Foundation: '.($generateFoundation ? 'Yes' : 'No'),
+            'Exclude PUT: '.($excludePut ? 'Yes' : 'No'),
         ]);
 
         $config = new Config(
@@ -202,20 +205,21 @@ class GenerateCommand extends Command
             $this->io->success('Specification parsed successfully');
         } catch (\Exception $e) {
             $this->io->error("Failed to parse specification: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
 
         $postProcessors = [];
 
         if ($generateTests) {
-            $postProcessors[] = new JsonApiPestTestGenerator();
-            $postProcessors[] = new JsonApiFactoryGenerator();
+            $postProcessors[] = new JsonApiPestTestGenerator;
+            $postProcessors[] = new JsonApiFactoryGenerator;
         }
 
         if ($generateFoundation) {
-            $postProcessors[] = new ConfigPostProcessor();
-            $postProcessors[] = new ServiceProviderPostProcessor();
-            $postProcessors[] = new TestSetupPostProcessor();
+            $postProcessors[] = new ConfigPostProcessor;
+            $postProcessors[] = new ServiceProviderPostProcessor;
+            $postProcessors[] = new TestSetupPostProcessor;
         }
 
         // Generate code
@@ -235,6 +239,7 @@ class GenerateCommand extends Command
             $this->io->success('Code generated successfully');
         } catch (\Exception $e) {
             $this->io->error("Failed to generate code: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
 
@@ -275,7 +280,7 @@ class GenerateCommand extends Command
             $this->io->text("Skipped: {$skipped} files (already exist, use --force to overwrite)");
         }
 
-        (new PintRunner())->run($outputDir, $output);
+        (new PintRunner)->run($outputDir, $output);
 
         $this->io->success("SDK generated successfully in {$outputDir}");
 
@@ -303,7 +308,7 @@ class GenerateCommand extends Command
         }
 
         $extension = str_ends_with($url, '.json') ? '.json' : '.yaml';
-        $tempFile = tempnam(sys_get_temp_dir(), 'openapi') . $extension;
+        $tempFile = tempnam(sys_get_temp_dir(), 'openapi').$extension;
         file_put_contents($tempFile, $content);
 
         return $tempFile;

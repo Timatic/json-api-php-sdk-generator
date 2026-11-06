@@ -21,6 +21,7 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
     protected function getConfigKey(): string
     {
         $connectorName = $this->config->connectorName;
+
         // Remove "Connector" suffix and convert to lowercase
         return strtolower(preg_replace('/Connector$/', '', $connectorName));
     }
@@ -44,9 +45,9 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         $classType->addTrait(AlwaysThrowOnErrors::class);
 
         // Build Foundation class names with target namespace
-        $foundationNamespace = $this->config->namespace . '\\Foundation';
-        $jsonApiPaginatorClass = $foundationNamespace . '\\Pagination\\JsonApiPaginator';
-        $jsonApiResponseClass = $foundationNamespace . '\\Responses\\JsonApiResponse';
+        $foundationNamespace = $this->config->namespace.'\\Foundation';
+        $jsonApiPaginatorClass = $foundationNamespace.'\\Pagination\\JsonApiPaginator';
+        $jsonApiResponseClass = $foundationNamespace.'\\Responses\\JsonApiResponse';
 
         // Add additional imports for custom methods
         $namespace->addUse(Request::class);
@@ -77,7 +78,7 @@ class JsonApiConnectorGenerator extends ConnectorGenerator
         // Remove resource methods (we don't generate Resource classes)
         $knownMethods = ['__construct', 'resolveBaseUrl', 'defaultConfig'];
         foreach ($classType->getMethods() as $methodName => $method) {
-            if (!in_array($methodName, $knownMethods, true)) {
+            if (! in_array($methodName, $knownMethods, true)) {
                 $classType->removeMethod($methodName);
             }
         }
@@ -139,10 +140,9 @@ return [
 PHP);
     }
 
-
     public function addPaginateMethod(ClassType $classType): void
     {
-        $jsonApiPaginatorClass = $this->config->namespace . '\\Foundation\\Pagination\\JsonApiPaginator';
+        $jsonApiPaginatorClass = $this->config->namespace.'\\Foundation\\Pagination\\JsonApiPaginator';
 
         $paginate = $classType->addMethod('paginate')
             ->setPublic()
