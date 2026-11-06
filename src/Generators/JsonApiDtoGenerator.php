@@ -34,7 +34,7 @@ class JsonApiDtoGenerator extends DtoGenerator
 
         foreach ($specification->endpoints as $endpoint) {
             $className = $this->getWriteDtoClassName($endpoint);
-            $schema = $specification->components->schemas[$endpoint->requestBodySchema] ?? null;
+            $schema = $specification->components->schemas[$endpoint->requestBodySchema ?? ''] ?? null;
 
             if ($className && $schema instanceof Schema) {
                 $this->generateDtoClass($className, $schema);

@@ -233,7 +233,7 @@ class MutationRequestTestGenerator
 
     protected function getBodyResourceType(Endpoint $endpoint): string
     {
-        $schema = $this->specification->components->schemas[$endpoint->requestBodySchema] ?? null;
+        $schema = $this->specification->components->schemas[$endpoint->requestBodySchema ?? ''] ?? null;
 
         return $schema?->properties['data']?->properties['type']?->enum[0] ?? $this->getResourceTypeFromEndpoint($endpoint);
     }
