@@ -20,7 +20,7 @@
         }
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "symfony/console": "^7.0",
         "timatic/saloon-sdk-generator": "dev-main",
         "saloonphp/pagination-plugin": "^2.0",
