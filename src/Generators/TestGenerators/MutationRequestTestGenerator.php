@@ -58,6 +58,8 @@ class MutationRequestTestGenerator
     {
         $dtoInstantiation = $this->generateDtoInstantiation($endpoint);
         $functionStub = str_replace('{{ dtoInstantiation }}', $dtoInstantiation, $functionStub);
+        $functionStub = str_replace('{{ responseType }}', $this->getResourceTypeFromEndpoint($endpoint), $functionStub);
+        $functionStub = str_replace('{{ responseDto }}', "\\{$this->namespace}\\DataTransferObjects\\{$this->getDtoClassName($endpoint)}", $functionStub);
 
         $bodyValidation = $this->generateBodyValidation($endpoint);
         $functionStub = str_replace('{{ bodyValidation }}', $bodyValidation, $functionStub);
