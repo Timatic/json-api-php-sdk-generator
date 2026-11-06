@@ -45,3 +45,175 @@ What `--foundation` does comes down to:
 - Updates your `composer.json` with PSR-4 autoload mappings
 - Adds composer scripts `test`, `coverage`, `format` and `analyse`
 - Enables the Pest plugin in `config.allow-plugins`.
+- Adds `phpunit.xml`, `phpstan.neon`, `tests/Pest.php` and `tests/TestCase.php`.
+
+## Regenerating
+
+Run the generator again without `--foundation` whenever the API changes. Add `--force` so that Requests, DTOs,
+Factories and tests for endpoints that were removed from the API are deleted. Files in `src/Foundation` are never
+touched, so changes you made there are kept. Add `-v` to list every written file.
+
+```bash
+./bin/jsonapi-sdk generate ./openapi.json --output=../my-sdk/ --force
+```
+
+## Using the generated SDK
+
+The examples below use an SDK generated with `--connector-name="AcmeConnector"` and the namespace `Acme\Sdk` for an
+API with an `articles` resource. Class names follow the `operationId`s in your OpenAPI specification.
+
+### Configuration
+
+The SDK is a Laravel package that registers itself through auto-discovery. Publish the config file and add your
+credentials to `.env`:
+
+```bash
+php artisan vendor:publish --tag=acme-config
+```
+
+```env
+ACME_BASE_URL=https://api.acme.test
+ACME_API_TOKEN=your-api-token
+```
+
+### Sending requests
+
+The connector is registered as a singleton, so you can inject it:
+
+```php
+use Acme\Sdk\AcmeConnector;
+use Acme\Sdk\DataTransferObjects\Article;
+use Acme\Sdk\Requests\Articles\CreateArticleRequest;
+use Acme\Sdk\Requests\Articles\GetArticleRequest;
+use Acme\Sdk\Requests\Articles\ListArticlesCollectionRequest;
+
+class ArticleController extends Controller
+{
+    public function __construct(
+        protected AcmeConnector $acme,
+    ) {}
+
+    public function index()
+    {
+        // The first page, limited by the API's default page size
+        $articles = $this->acme->send(new ListArticlesCollectionRequest)->dto();
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function show(string $id)
+    {
+        $article = $this->acme->send(new GetArticleRequest($id))->dtoOrFail();
+
+        return view('articles.show', compact('article'));
+    }
+
+    public function store(Request $request)
+    {
+        $article = Article::from(['title' => $request->input('title')]);
+
+        $created = $this->acme->send(new CreateArticleRequest($article))->dtoOrFail();
+
+        return redirect()->route('articles.show', $created->id);
+    }
+}
+```
+
+DTOs are [Spatie Data](https://spatie.be/docs/laravel-data) objects. JSON:API attributes and relationships are
+flattened into typed properties, so you use `$article->title` instead of `$article->attributes->title`.
+Write endpoints with their own request body schema get a separate DTO named after the action, e.g. `NewArticle` and
+`UpdateArticle`.
+
+### Pagination
+
+Collection requests can be paginated. The paginator follows JSON:API's `page[number]` and `page[size]` and stops when
+`links.next` is missing.
+
+```php
+$paginator = $acme->paginate(new ListArticlesCollectionRequest);
+$paginator->setPerPageLimit(50);
+
+// Iterate over all pages lazily
+foreach ($paginator->items() as $article) {
+    // ...
+}
+
+// Or fetch all pages into one Collection
+$articles = $acme->paginate(new ListArticlesCollectionRequest)->dtoCollection();
+```
+
+### Includes and filters
+
+When the specification has an `include` parameter, the request gets an `include()` method plus one method per
+relationship. Filter parameters (`filter[...]`) add a `filter()` method.
+
+```php
+use Acme\Sdk\Foundation\Filtering\Operator;
+
+$request = (new ListArticlesCollectionRequest)
+    ->includeAuthor()
+    ->filter('status', 'published')
+    ->filter('publishedAt', '2026-01-01', Operator::GreaterThanOrEquals);
+
+$articles = $acme->send($request)->dto();
+$articles->first()->author; // Hydrated from the included resources
+```
+
+### Responses
+
+Every response is a `JsonApiResponse`, which adds JSON:API helpers to Saloon's response:
+
+```php
+$response = $acme->send(new ListArticlesCollectionRequest);
+
+$response->firstItem();  // Raw JSON:API data of the first item
+$response->hasErrors();
+$response->errors();
+$response->meta();
+$response->links();
+$response->included();
+```
+
+### Testing
+
+Every DTO has a factory, which you get through `testFactory()`. Combine it with `JsonApiSerializer` to fake API
+responses:
+
+```php
+use Acme\Sdk\DataTransferObjects\Article;
+use Acme\Sdk\Foundation\JsonApi\JsonApiSerializer;
+use Acme\Sdk\Requests\Articles\ListArticlesCollectionRequest;
+use Saloon\Http\Faking\MockResponse;
+use Saloon\Laravel\Facades\Saloon;
+
+test('it lists articles', function () {
+    // Given
+    $article = Article::testFactory()->state(['title' => 'Hello world'])->withId()->make();
+
+    Saloon::fake([
+        ListArticlesCollectionRequest::class => MockResponse::make([
+            'data' => [JsonApiSerializer::toJsonApi($article)],
+        ]),
+    ]);
+
+    // When
+    $response = $this->get(route('articles.index'));
+
+    // Then
+    $response->assertOk()->assertSee('Hello world');
+});
+```
+
+Factories support `state([...])` to set attributes, `withId()` for a random UUID and `count(3)` to make a
+Collection.
+
+### Development
+
+The generated SDK comes with these composer scripts:
+
+```bash
+composer test     # Pest
+composer coverage
+composer format   # Pint
+composer analyse  # PHPStan
+```
