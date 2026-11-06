@@ -27,9 +27,7 @@ trait ResourceTypeExtractorTrait
             // Fallback: parse from endpoint path
             $path = $endpoint->pathAsString();
             // Extract first path segment (e.g., /budgets -> budgets)
-            preg_match('#^/([^/]+)#', $path, $matches);
-
-            if (count($matches) >= 2) {
+            if (! preg_match('#^/([^/]+)#', $path, $matches)) {
                 throw new \RuntimeException('Resource type for "'.$path.'" does not exist');
             }
 
